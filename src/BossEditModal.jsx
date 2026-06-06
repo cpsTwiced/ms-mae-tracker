@@ -108,7 +108,7 @@ export default function BossEditModal({
           {SECTIONS.map(({ cadence, label }) => {
             const bosses = BOSS_CONTENT.filter(
               (boss) => (boss.cadence ?? 'weekly') === cadence,
-            )
+            ).sort((a, b) => a.difficulties[0].level - b.difficulties[0].level)
             if (bosses.length === 0) return null
             return (
               <Stack key={cadence} gap="xs">

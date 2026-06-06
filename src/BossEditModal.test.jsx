@@ -68,11 +68,11 @@ describe('BossEditModal', () => {
   it('reports the boss, difficulty, and checked state on toggle', () => {
     const onSetDifficulty = vi.fn()
     renderModal({ onSetDifficulty })
-    // First boss in the catalog is Zakum; its only weekly difficulty is Chaos.
+    // First boss in the catalog is Lotus; its first difficulty is Normal.
     fireEvent.click(screen.getAllByRole('checkbox')[0])
     expect(onSetDifficulty).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'zakum' }),
-      expect.objectContaining({ d: 'Chaos' }),
+      expect.objectContaining({ id: 'lotus' }),
+      expect.objectContaining({ d: 'Normal' }),
       true,
     )
   })

@@ -1,59 +1,13 @@
 // Boss catalog for the "Edit Boss Content" picker.
 // `cadence` groups bosses in the picker and tracks their crystal reset:
-// 'weekly' (resets Thursday) or 'monthly' (Black Mage). Bosses with mixed
-// cadences keep only their weekly difficulty: Chaos Zakum, Hard Magnus, Hard
-// Hilla, Chaos Papulatus, Chaos Pink Bean. Daily-reset bosses (Horntail,
-// Gollux) are intentionally excluded. Reset cadence per difficulty sourced from
+// 'weekly' (resets Thursday) or 'monthly' (Black Mage).
+// Daily-reset bosses (Horntail, Gollux) are intentionally excluded. Reset
+// cadence per difficulty sourced from
 // the community DigitalTQ boss guide (no official GMS list breaks it down this way).
 // img -> self-hosted portrait in public/bosses (null = fall back to initials avatar).
 // Portraits were sourced once from the community maplestory.io sprite API.
 // Level requirements are the in-game entry levels per difficulty.
 export const BOSS_CONTENT = [
-  {
-    id: 'zakum',
-    name: 'Zakum',
-    cadence: 'weekly',
-    img: '/bosses/zakum.png',
-    difficulties: [{ d: 'Chaos', level: 90 }],
-  },
-  {
-    id: 'magnus',
-    name: 'Magnus',
-    cadence: 'weekly',
-    img: '/bosses/magnus.png',
-    difficulties: [{ d: 'Hard', level: 175 }],
-  },
-  {
-    id: 'hilla',
-    name: 'Hilla',
-    cadence: 'weekly',
-    img: '/bosses/hilla.png',
-    difficulties: [{ d: 'Hard', level: 170 }],
-  },
-  {
-    id: 'papulatus',
-    name: 'Papulatus',
-    cadence: 'weekly',
-    img: '/bosses/papulatus.png',
-    difficulties: [{ d: 'Chaos', level: 190 }],
-  },
-  {
-    id: 'pinkbean',
-    name: 'Pink Bean',
-    cadence: 'weekly',
-    img: '/bosses/pinkbean.png',
-    difficulties: [{ d: 'Chaos', level: 140 }],
-  },
-  {
-    id: 'cygnus',
-    name: 'Cygnus',
-    cadence: 'weekly',
-    img: '/bosses/cygnus.png',
-    difficulties: [
-      { d: 'Easy', level: 100 },
-      { d: 'Normal', level: 165 },
-    ],
-  },
   {
     id: 'lotus',
     name: 'Lotus',
@@ -180,6 +134,32 @@ export const BOSS_CONTENT = [
     difficulties: [
       { d: 'Normal', level: 280 },
       { d: 'Hard', level: 285 },
+    ],
+  },
+  {
+    // Odium endgame boss; all difficulties enter at Lv.270, gated by Sacred
+    // Power / Authentic Force rather than level.
+    id: 'firstadversary',
+    name: 'The First Adversary',
+    cadence: 'weekly',
+    img: '/bosses/firstadversary.png',
+    difficulties: [
+      { d: 'Easy', level: 270 },
+      { d: 'Normal', level: 270 },
+      { d: 'Hard', level: 270 },
+      { d: 'Extreme', level: 270 },
+    ],
+  },
+  {
+    // Talahart (Lv.290) endgame boss; both difficulties enter at Lv.290, gated
+    // by Sacred Power / Authentic Force.
+    id: 'baldrix',
+    name: 'Baldrix',
+    cadence: 'weekly',
+    img: '/bosses/baldrix.png',
+    difficulties: [
+      { d: 'Normal', level: 290 },
+      { d: 'Hard', level: 290 },
     ],
   },
   {

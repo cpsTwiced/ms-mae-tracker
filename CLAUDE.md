@@ -38,7 +38,7 @@ A Husky pre-commit hook runs `lint-staged` (eslint --fix on staged JS) then the 
 
 ## Images / external data
 
-Boss portraits are **self-hosted** in `public/bosses/<bossId>.png`, sourced once from the **unofficial** maplestory.io sprite API (there is no official GMS source for boss/class art). The running app makes **no external API calls**. The initials-avatar fallback (`img: null` → `icon.js` `initials()`) still exists for any boss without art, though every current boss has a portrait. Most portraits are mob `render/stand/0` frames; Gloom is the exception — the full giant boss can't be rendered as a normal mob, so it uses the **Gloom Core** sprite (mob id 8950116) instead, which is its recognizable purple eye.
+Boss portraits are **self-hosted** in `public/bosses/<bossId>.png`, sourced once from **unofficial** community sources (there is no official GMS source for boss/class art). The running app makes **no external API calls**. The initials-avatar fallback (`img: null` → `icon.js` `initials()`) still exists for any boss without art, though every current boss has a portrait. Most portraits are mob `render/stand/0` frames from the **maplestory.io** sprite API; Gloom is the exception — the full giant boss can't be rendered as a normal mob, so it uses the **Gloom Core** sprite (mob id 8950116) instead, which is its recognizable purple eye. **The First Adversary** and **Baldrix** portraits instead come from the community **MapleStory Wiki** (maplestorywiki.net) — their `Mob First Adversary` / `Mob Godslayer Baldrix` sprites, downsized to ~512px to match the others.
 
 ## Conventions
 
