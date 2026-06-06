@@ -1,13 +1,6 @@
-import {
-  Button,
-  Card,
-  Checkbox,
-  Group,
-  Modal,
-  Stack,
-  Text,
-} from '@mantine/core'
+import { Button, Card, Checkbox, Group, Stack, Text } from '@mantine/core'
 import { WEEKLY_CONTENT, WEEKLY_SECTIONS } from './weeklyContent'
+import ResponsiveModal from './ResponsiveModal'
 import ScrollStatusArea from './ScrollStatusArea'
 
 export default function WeeklyEditModal({
@@ -47,7 +40,7 @@ export default function WeeklyEditModal({
   }
 
   return (
-    <Modal
+    <ResponsiveModal
       opened={opened}
       onClose={onClose}
       title="Edit Weekly Content"
@@ -72,6 +65,6 @@ export default function WeeklyEditModal({
       <Button fullWidth mt="md" onClick={onClose}>
         Done
       </Button>
-    </Modal>
+    </ResponsiveModal>
   )
 }

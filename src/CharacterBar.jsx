@@ -5,7 +5,6 @@ import {
   Card,
   Group,
   Menu,
-  Modal,
   Progress,
   Stack,
   Text,
@@ -30,6 +29,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { MAX_CHARACTERS } from './storage'
 import CharacterFields from './CharacterFields'
+import ResponsiveModal from './ResponsiveModal'
 
 const EMPTY_CHARACTER_DRAFT = { name: '', level: 1, job: '', server: '' }
 
@@ -390,7 +390,7 @@ export default function CharacterBar({
         </Stack>
       </Card>
 
-      <Modal
+      <ResponsiveModal
         opened={addOpen}
         onClose={() => setAddOpen(false)}
         title="Add character"
@@ -410,9 +410,9 @@ export default function CharacterBar({
             </Button>
           </Group>
         </form>
-      </Modal>
+      </ResponsiveModal>
 
-      <Modal
+      <ResponsiveModal
         opened={!!editTarget}
         onClose={() => setEditTarget(null)}
         title={`Edit ${editTarget?.name ?? 'character'}`}
@@ -431,9 +431,9 @@ export default function CharacterBar({
             </Button>
           </Group>
         </form>
-      </Modal>
+      </ResponsiveModal>
 
-      <Modal
+      <ResponsiveModal
         opened={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title={`Delete ${deleteTarget?.name ?? 'character'}?`}
@@ -450,7 +450,7 @@ export default function CharacterBar({
             Delete character
           </Button>
         </Group>
-      </Modal>
+      </ResponsiveModal>
     </>
   )
 }

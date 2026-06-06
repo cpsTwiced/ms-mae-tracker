@@ -4,13 +4,14 @@ import {
   Card,
   Checkbox,
   Group,
-  Modal,
   Stack,
   Text,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { BOSS_CONTENT } from './bossContent'
 import DifficultyBadge from './DifficultyBadge'
 import { initials } from './icon'
+import ResponsiveModal from './ResponsiveModal'
 import ScrollStatusArea from './ScrollStatusArea'
 
 const SECTIONS = [
@@ -25,6 +26,7 @@ export default function BossEditModal({
   onSetDifficulty,
   onUnselectAll,
 }) {
+  const isMobile = useMediaQuery('(max-width: 48em)')
   const charLevel = Number(character.level) || 0
   const has = (boss, d) =>
     character.bossTasks.some((t) => t.key === `${boss.id}:${d}`)
@@ -33,11 +35,15 @@ export default function BossEditModal({
   const renderBoss = (boss) => {
     return (
       <Card key={boss.id} withBorder radius="md" padding="xs">
-        <Group gap="sm" wrap="nowrap">
+        <Group
+          gap="sm"
+          wrap={isMobile ? 'wrap' : 'nowrap'}
+          align={isMobile ? 'flex-start' : 'center'}
+        >
           <Group
             gap="sm"
             wrap="nowrap"
-            w={150}
+            w={isMobile ? '100%' : 220}
             style={{ flexShrink: 0, minWidth: 0 }}
           >
             <Avatar src={boss.img || undefined} radius="sm" size={40}>
@@ -52,12 +58,14 @@ export default function BossEditModal({
               </Text>
             </div>
           </Group>
-          {/* nowrap keeps every boss's difficulties on a single row, so all the
-              cards are the same height; the modal is sized wide enough below
-              that even four-difficulty bosses (Kalos, Kaling) fit. */}
+          {/* On desktop, nowrap keeps every boss's difficulties on one row so
+              all cards are the same height (the modal is wide enough for the
+              four-difficulty bosses like Kalos/Kaling). On narrow screens the
+              row wraps instead, so the checkboxes stay reachable without
+              horizontal scrolling. */}
           <Group
             gap="sm"
-            wrap="nowrap"
+            wrap={isMobile ? 'wrap' : 'nowrap'}
             justify="flex-start"
             style={{ flex: 1 }}
           >
@@ -89,11 +97,11 @@ export default function BossEditModal({
   }
 
   return (
-    <Modal
+    <ResponsiveModal
       opened={opened}
       onClose={onClose}
       title="Edit Boss Content"
-      size={740}
+      size={820}
     >
       <ScrollStatusArea autosize mah="55vh">
         <Stack gap="md">
@@ -123,6 +131,6 @@ export default function BossEditModal({
         </Button>
         <Button onClick={onClose}>Done</Button>
       </Group>
-    </Modal>
+    </ResponsiveModal>
   )
 }
