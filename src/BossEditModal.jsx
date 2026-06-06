@@ -1,0 +1,128 @@
+import {
+  Avatar,
+  Button,
+  Card,
+  Checkbox,
+  Group,
+  Modal,
+  Stack,
+  Text,
+} from '@mantine/core'
+import { BOSS_CONTENT } from './bossContent'
+import DifficultyBadge from './DifficultyBadge'
+import { initials } from './icon'
+import ScrollStatusArea from './ScrollStatusArea'
+
+const SECTIONS = [
+  { cadence: 'weekly', label: 'Weekly' },
+  { cadence: 'monthly', label: 'Monthly' },
+]
+
+export default function BossEditModal({
+  opened,
+  onClose,
+  character,
+  onSetDifficulty,
+  onUnselectAll,
+}) {
+  const charLevel = Number(character.level) || 0
+  const has = (boss, d) =>
+    character.bossTasks.some((t) => t.key === `${boss.id}:${d}`)
+  const hasSelection = character.bossTasks.length > 0
+
+  const renderBoss = (boss) => {
+    return (
+      <Card key={boss.id} withBorder radius="md" padding="xs">
+        <Group gap="sm" wrap="nowrap">
+          <Group
+            gap="sm"
+            wrap="nowrap"
+            w={150}
+            style={{ flexShrink: 0, minWidth: 0 }}
+          >
+            <Avatar src={boss.img || undefined} radius="sm" size={40}>
+              {initials(boss.name)}
+            </Avatar>
+            <div style={{ minWidth: 0 }}>
+              <Text size="sm" truncate>
+                {boss.name}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Lv. {boss.difficulties[0].level}
+              </Text>
+            </div>
+          </Group>
+          {/* nowrap keeps every boss's difficulties on a single row, so all the
+              cards are the same height; the modal is sized wide enough below
+              that even four-difficulty bosses (Kalos, Kaling) fit. */}
+          <Group
+            gap="sm"
+            wrap="nowrap"
+            justify="flex-start"
+            style={{ flex: 1 }}
+          >
+            {boss.difficulties.map((diff) => {
+              const checked = has(boss, diff.d)
+              const overLevel = charLevel > 0 && charLevel < diff.level
+              return (
+                <Checkbox
+                  key={diff.d}
+                  w={110}
+                  checked={checked}
+                  onChange={(e) =>
+                    onSetDifficulty(boss, diff, e.currentTarget.checked)
+                  }
+                  label={
+                    <DifficultyBadge
+                      difficulty={diff.d}
+                      dimmed={overLevel}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  }
+                />
+              )
+            })}
+          </Group>
+        </Group>
+      </Card>
+    )
+  }
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Boss Content"
+      size={740}
+    >
+      <ScrollStatusArea autosize mah="55vh">
+        <Stack gap="md">
+          {SECTIONS.map(({ cadence, label }) => {
+            const bosses = BOSS_CONTENT.filter(
+              (boss) => (boss.cadence ?? 'weekly') === cadence,
+            )
+            if (bosses.length === 0) return null
+            return (
+              <Stack key={cadence} gap="xs">
+                <Text size="sm" fw={700} c="dimmed" tt="uppercase">
+                  {label}
+                </Text>
+                {bosses.map(renderBoss)}
+              </Stack>
+            )
+          })}
+        </Stack>
+      </ScrollStatusArea>
+      <Group mt="md" grow>
+        <Button
+          variant="default"
+          onClick={onUnselectAll}
+          disabled={!hasSelection}
+        >
+          Unselect All
+        </Button>
+        <Button onClick={onClose}>Done</Button>
+      </Group>
+    </Modal>
+  )
+}
