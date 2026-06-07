@@ -1,14 +1,8 @@
 import { Badge } from '@mantine/core'
-import { DIFFICULTY_STYLE } from './difficulties'
+import { DIFFICULTY_STYLE } from '@/data/difficulties'
 
 // In-game-style difficulty pill (uppercase label, Maple Planner palette).
-// `dimmed` softens it for over-level difficulties that stay selectable.
-export default function DifficultyBadge({
-  difficulty,
-  dimmed = false,
-  style,
-  ...props
-}) {
+export default function DifficultyBadge({ difficulty, style, ...props }) {
   const palette = DIFFICULTY_STYLE[difficulty] ?? DIFFICULTY_STYLE.Normal
   return (
     <Badge
@@ -25,7 +19,6 @@ export default function DifficultyBadge({
         backgroundColor: palette.bg,
         color: palette.fg,
         border: `1px solid ${palette.border ?? palette.bg}`,
-        opacity: dimmed ? 0.45 : 1,
         ...style,
       }}
     >

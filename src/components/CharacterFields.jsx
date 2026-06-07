@@ -1,6 +1,6 @@
 import { Group, NumberInput, Select, TextInput } from '@mantine/core'
-import { JOB_GROUPS } from './jobs'
-import { SERVER_GROUPS } from './servers'
+import { JOB_GROUPS } from '@/data/jobs'
+import { SERVER_GROUPS } from '@/data/servers'
 
 // Name / level / job / server inputs, controlled by the parent.
 // `onChange` receives a partial patch, e.g. { level: 200 }.

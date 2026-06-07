@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Container, Title } from '@mantine/core'
-import { lastBossReset, lastQuestReset, lastMonthlyReset } from './weeklyReset'
+import {
+  lastBossReset,
+  lastQuestReset,
+  lastMonthlyReset,
+} from '@/lib/weeklyReset'
 import {
   loadState,
   saveState,
@@ -8,10 +12,10 @@ import {
   makeBossTask,
   makeWeeklyTask,
   MAX_CHARACTERS,
-} from './storage'
-import { isMonthlyBossTask } from './bossContent'
-import Tracker from './Tracker'
-import CharacterBar from './CharacterBar'
+} from '@/lib/storage'
+import { isMonthlyBossTask } from '@/data/bossContent'
+import Tracker from '@/components/Tracker'
+import CharacterBar from '@/components/CharacterBar'
 
 export default function App() {
   const [state, setState] = useState(loadState)

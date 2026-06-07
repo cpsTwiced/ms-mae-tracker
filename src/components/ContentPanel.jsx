@@ -27,7 +27,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import DifficultyBadge from './DifficultyBadge'
-import { initials } from './icon'
+import { initials } from '@/lib/icon'
 import ScrollStatusArea from './ScrollStatusArea'
 
 // Presentational row card, shared by the live sortable row and the drag

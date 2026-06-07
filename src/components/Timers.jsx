@@ -1,6 +1,10 @@
 import { Card, Group, Stack, Text, Tooltip } from '@mantine/core'
-import { nextDailyReset, nextBossReset, nextEventReset } from './weeklyReset'
-import { formatCountdown } from './format'
+import {
+  nextDailyReset,
+  nextBossReset,
+  nextEventReset,
+} from '@/lib/weeklyReset'
+import { formatCountdown } from '@/lib/format'
 
 // Show each reset in the viewer's local timezone — the countdown itself is an
 // absolute instant, so it is already correct everywhere; only the printed time

@@ -27,7 +27,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { MAX_CHARACTERS } from './storage'
+import { MAX_CHARACTERS } from '@/lib/storage'
 import CharacterFields from './CharacterFields'
 import ResponsiveModal from './ResponsiveModal'
 

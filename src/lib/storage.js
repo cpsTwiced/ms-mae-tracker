@@ -1,6 +1,6 @@
 import { lastBossReset, lastQuestReset, lastMonthlyReset } from './weeklyReset'
-import { BOSS_CONTENT } from './bossContent'
-import { WEEKLY_CONTENT } from './weeklyContent'
+import { BOSS_CONTENT } from '@/data/bossContent'
+import { WEEKLY_CONTENT } from '@/data/weeklyContent'
 
 const KEY = 'maple-tracker-v2'
 const OLD_KEY = 'maple-weekly-tasks'

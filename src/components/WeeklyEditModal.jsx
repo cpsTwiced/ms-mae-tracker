@@ -1,5 +1,5 @@
 import { Button, Card, Checkbox, Group, Stack, Text } from '@mantine/core'
-import { WEEKLY_CONTENT, WEEKLY_SECTIONS } from './weeklyContent'
+import { WEEKLY_CONTENT, WEEKLY_SECTIONS } from '@/data/weeklyContent'
 import ResponsiveModal from './ResponsiveModal'
 import ScrollStatusArea from './ScrollStatusArea'
 

@@ -4,12 +4,12 @@ import Timers from './Timers'
 import ContentPanel from './ContentPanel'
 import BossEditModal from './BossEditModal'
 import WeeklyEditModal from './WeeklyEditModal'
-import { isMonthlyBossTask } from './bossContent'
+import { isMonthlyBossTask } from '@/data/bossContent'
 import {
   WEEKLY_SECTIONS,
   weeklyCategoryOf,
   weeklyOrderOf,
-} from './weeklyContent'
+} from '@/data/weeklyContent'
 
 export default function Tracker({
   character,

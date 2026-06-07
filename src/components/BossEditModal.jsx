@@ -8,9 +8,9 @@ import {
   Text,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { BOSS_CONTENT } from './bossContent'
+import { BOSS_CONTENT } from '@/data/bossContent'
 import DifficultyBadge from './DifficultyBadge'
-import { initials } from './icon'
+import { initials } from '@/lib/icon'
 import ResponsiveModal from './ResponsiveModal'
 import ScrollStatusArea from './ScrollStatusArea'
 
@@ -27,7 +27,6 @@ export default function BossEditModal({
   onUnselectAll,
 }) {
   const isMobile = useMediaQuery('(max-width: 48em)')
-  const charLevel = Number(character.level) || 0
   const has = (boss, d) =>
     character.bossTasks.some((t) => t.key === `${boss.id}:${d}`)
   const hasSelection = character.bossTasks.length > 0
@@ -71,7 +70,6 @@ export default function BossEditModal({
           >
             {boss.difficulties.map((diff) => {
               const checked = has(boss, diff.d)
-              const overLevel = charLevel > 0 && charLevel < diff.level
               return (
                 <Checkbox
                   key={diff.d}
@@ -83,7 +81,6 @@ export default function BossEditModal({
                   label={
                     <DifficultyBadge
                       difficulty={diff.d}
-                      dimmed={overLevel}
                       style={{ cursor: 'pointer' }}
                     />
                   }
