@@ -46,7 +46,7 @@ export default function WeeklyEditModal({
       title="Edit Weekly Content"
       size="md"
     >
-      <ScrollStatusArea autosize mah="55vh">
+      <ScrollStatusArea autosize className="pickerModalScroll">
         <Stack gap="md">
           {WEEKLY_SECTIONS.map(({ key, label }) => {
             const items = WEEKLY_CONTENT.filter((c) => c.category === key)

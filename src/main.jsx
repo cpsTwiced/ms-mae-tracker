@@ -11,6 +11,9 @@ const theme = createTheme({
   // Filled accents (buttons, active tab) pick a readable text color for the
   // brighter sage instead of forcing white on a dark-green fill.
   autoContrast: true,
+  // Honor the OS "reduce motion" setting for Mantine's own animations
+  // (modals, tooltips, transitions). Custom CSS motion is handled in index.css.
+  respectReducedMotion: true,
   defaultRadius: 'lg',
   colors: {
     // Sage-teal accent — soft but bright enough to read clearly on the dark UI.

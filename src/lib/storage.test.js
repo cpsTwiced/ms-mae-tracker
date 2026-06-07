@@ -1,14 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
+  deserializeState,
   loadState,
   saveState,
   makeCharacter,
   makeBossTask,
   makeWeeklyTask,
+  STORAGE_KEY,
 } from './storage'
 
 beforeEach(() => {
   localStorage.clear()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('loadState', () => {
@@ -20,55 +26,6 @@ describe('loadState', () => {
     expect(typeof s.bossResetAt).toBe('number')
     expect(typeof s.weeklyResetAt).toBe('number')
     expect(typeof s.monthlyResetAt).toBe('number')
-  })
-
-  it('migrates the original single-list format into boss tasks', () => {
-    localStorage.setItem(
-      'maple-weekly-tasks',
-      JSON.stringify({
-        tasks: [{ id: 'a', text: 'Hard Lotus', done: true }],
-        resetAt: 123,
-      }),
-    )
-    const s = loadState()
-    expect(s.characters[0].bossTasks).toEqual([
-      {
-        id: 'a',
-        key: 'Hard Lotus',
-        bossId: null,
-        name: 'Hard Lotus',
-        img: null,
-        difficulty: '',
-        level: 0,
-        done: true,
-      },
-    ])
-    expect(s.bossResetAt).toBe(123)
-  })
-
-  it('migrates a v2 character that still uses the bosses field', () => {
-    saveState({
-      characters: [
-        {
-          id: 'x',
-          name: 'Legacy',
-          level: 200,
-          job: '',
-          server: '',
-          bosses: [{ id: 'b1', name: 'Zakum', done: false }],
-        },
-      ],
-      activeId: 'x',
-      resetAt: 555,
-    })
-    const c = loadState().characters[0]
-    expect(c.bosses).toBeUndefined()
-    expect(c.weeklyTasks).toEqual([])
-    expect(c.bossTasks[0]).toMatchObject({
-      id: 'b1',
-      name: 'Zakum',
-      done: false,
-    })
   })
 
   it('refreshes boss portraits from the catalog on load', () => {
@@ -104,40 +61,6 @@ describe('loadState', () => {
     expect(task.img).toBe('/bosses/lotus.png')
   })
 
-  it('links legacy boss tasks without a bossId to the catalog by name', () => {
-    saveState({
-      characters: [
-        {
-          id: 'c1',
-          name: 'Main',
-          level: 250,
-          job: '',
-          server: '',
-          bossTasks: [
-            // Pre-bossId shape: only a name, no id and no portrait.
-            {
-              id: 't1',
-              key: 'Guardian Angel Slime',
-              bossId: null,
-              name: 'Guardian Angel Slime',
-              img: null,
-              difficulty: '',
-              level: 0,
-              done: false,
-            },
-          ],
-          weeklyTasks: [],
-        },
-      ],
-      activeId: 'c1',
-      bossResetAt: 1,
-      weeklyResetAt: 2,
-    })
-    const task = loadState().characters[0].bossTasks[0]
-    expect(task.bossId).toBe('slime')
-    expect(task.img).toBe('/bosses/slime.png')
-  })
-
   it('round-trips a saved state', () => {
     const character = makeCharacter({
       name: 'Mule',
@@ -152,7 +75,7 @@ describe('loadState', () => {
       weeklyResetAt: 2000,
       monthlyResetAt: 3000,
     }
-    saveState(saved)
+    expect(saveState(saved)).toBe(true)
     expect(loadState()).toEqual(saved)
   })
 
@@ -169,7 +92,7 @@ describe('loadState', () => {
 
   it('repairs malformed character fields and task lists', () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -225,15 +148,12 @@ describe('loadState', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('ignores storage write failures', () => {
-    const original = Storage.prototype.setItem
-    Storage.prototype.setItem = () => {
+  it('reports storage write failures', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota exceeded')
-    }
+    })
 
-    expect(() => saveState({ characters: [] })).not.toThrow()
-
-    Storage.prototype.setItem = original
+    expect(saveState({ characters: [] })).toBe(false)
   })
 })
 
@@ -275,5 +195,46 @@ describe('makeWeeklyTask', () => {
       name: 'Guild Culvert',
       done: false,
     })
+  })
+})
+
+describe('deserializeState', () => {
+  it('rejects invalid serialized data', () => {
+    expect(deserializeState('{broken')).toBeNull()
+    expect(deserializeState(null)).toBeNull()
+  })
+})
+
+describe('STORAGE_KEY', () => {
+  it('reads and writes under the v1 key', () => {
+    expect(STORAGE_KEY).toBe('maple-tracker-v1')
+
+    const character = makeCharacter({ name: 'Reader' })
+    saveState({
+      characters: [character],
+      activeId: character.id,
+      bossResetAt: 1,
+      weeklyResetAt: 2,
+      monthlyResetAt: 3,
+    })
+
+    expect(localStorage.getItem(STORAGE_KEY)).toContain('Reader')
+    expect(loadState().characters[0].name).toBe('Reader')
+  })
+
+  it('starts fresh and leaves data under any other key untouched (no migration)', () => {
+    // A blob under an old/other key is intentionally ignored on v1 load.
+    localStorage.setItem(
+      'maple-tracker-v2',
+      JSON.stringify({
+        characters: [{ id: 'old', name: 'Legacy' }],
+        activeId: 'old',
+      }),
+    )
+
+    const s = loadState()
+    expect(s.characters).toHaveLength(1)
+    expect(s.characters[0].name).toBe('Main')
+    expect(localStorage.getItem('maple-tracker-v2')).not.toBeNull()
   })
 })

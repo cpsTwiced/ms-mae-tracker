@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  lastWeeklyReset,
-  nextWeeklyReset,
   lastBossReset,
+  nextBossReset,
   lastQuestReset,
   nextQuestReset,
   lastEventReset,
@@ -29,12 +28,7 @@ describe('boss reset (Thursday)', () => {
 
   it('next boss reset is exactly one week after the last', () => {
     const now = new Date('2026-06-06T12:00:00Z')
-    expect(nextWeeklyReset(now) - lastWeeklyReset(now)).toBe(WEEK_MS)
-  })
-
-  it('lastWeeklyReset is an alias for lastBossReset', () => {
-    const now = new Date('2026-06-06T12:00:00Z')
-    expect(lastWeeklyReset(now)).toBe(lastBossReset(now))
+    expect(nextBossReset(now) - lastBossReset(now)).toBe(WEEK_MS)
   })
 })
 

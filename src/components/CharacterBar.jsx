@@ -212,14 +212,22 @@ function CharacterTile({
 // cap it renders as a disabled, non-interactive tile with a hint tooltip.
 function AddTile({ disabled, onClick }) {
   if (disabled) {
+    // Keep it a real (focusable) button with aria-disabled rather than a plain
+    // div, so keyboard users can reach it and surface the cap tooltip. The
+    // click is suppressed so it can't add past the cap.
     return (
       <Tooltip label={`Maximum of ${MAX_CHARACTERS} characters`} withArrow>
-        <div className="charAddTile" data-disabled aria-disabled="true">
+        <UnstyledButton
+          className="charAddTile"
+          data-disabled
+          aria-disabled="true"
+          onClick={(e) => e.preventDefault()}
+        >
           <PlusIcon />
           <Text fw={600} size="sm">
             Add Character
           </Text>
-        </div>
+        </UnstyledButton>
       </Tooltip>
     )
   }
@@ -405,7 +413,12 @@ export default function CharacterBar({
             <Button variant="subtle" onClick={() => setAddOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!addDraft.name.trim()}>
+            <Button
+              type="submit"
+              disabled={
+                !addDraft.name.trim() || typeof addDraft.level !== 'number'
+              }
+            >
               Create character
             </Button>
           </Group>
@@ -426,7 +439,12 @@ export default function CharacterBar({
             <Button variant="subtle" onClick={() => setEditTarget(null)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!editDraft.name.trim()}>
+            <Button
+              type="submit"
+              disabled={
+                !editDraft.name.trim() || typeof editDraft.level !== 'number'
+              }
+            >
               Save changes
             </Button>
           </Group>

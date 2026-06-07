@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Container, Title } from '@mantine/core'
+import { useEffect, useRef, useState } from 'react'
+import { Alert, Container, Title } from '@mantine/core'
 import {
   lastBossReset,
   lastQuestReset,
@@ -12,6 +12,8 @@ import {
   makeBossTask,
   makeWeeklyTask,
   MAX_CHARACTERS,
+  STORAGE_KEY,
+  deserializeState,
 } from '@/lib/storage'
 import { isMonthlyBossTask } from '@/data/bossContent'
 import Tracker from '@/components/Tracker'
@@ -19,64 +21,89 @@ import CharacterBar from '@/components/CharacterBar'
 
 export default function App() {
   const [state, setState] = useState(loadState)
-  const [now, setNow] = useState(() => Date.now())
+  const [saveFailed, setSaveFailed] = useState(false)
+  const skipNextSave = useRef(false)
 
-  // Tick every second so the timers stay live.
+  // Apply resets when a boundary passes. Checked on mount and once a minute
+  // while the app stays open — reset times are minute-granular, so a per-second
+  // tick is unnecessary and would re-render the whole planner tree every second
+  // (the live countdown owns its own 1s tick inside Timers). Weekly bosses and
+  // weekly content reset Thursday (GMS v.264 unified them); monthly bosses
+  // (Black Mage) reset on the 1st, so the weekly boundary must leave them alone.
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
+    function applyResets() {
+      const boss = lastBossReset()
+      const quest = lastQuestReset()
+      const month = lastMonthlyReset()
+      setState((s) => {
+        let characters = s.characters
+        let bossResetAt = s.bossResetAt
+        let weeklyResetAt = s.weeklyResetAt
+        let monthlyResetAt = s.monthlyResetAt
+        let changed = false
+        if (boss > s.bossResetAt) {
+          characters = characters.map((c) => ({
+            ...c,
+            bossTasks: c.bossTasks.map((t) =>
+              isMonthlyBossTask(t) ? t : { ...t, done: false },
+            ),
+          }))
+          bossResetAt = boss
+          changed = true
+        }
+        if (month > s.monthlyResetAt) {
+          characters = characters.map((c) => ({
+            ...c,
+            bossTasks: c.bossTasks.map((t) =>
+              isMonthlyBossTask(t) ? { ...t, done: false } : t,
+            ),
+          }))
+          monthlyResetAt = month
+          changed = true
+        }
+        if (quest > s.weeklyResetAt) {
+          characters = characters.map((c) => ({
+            ...c,
+            weeklyTasks: c.weeklyTasks.map((t) => ({ ...t, done: false })),
+          }))
+          weeklyResetAt = quest
+          changed = true
+        }
+        return changed
+          ? { ...s, characters, bossResetAt, weeklyResetAt, monthlyResetAt }
+          : s
+      })
+    }
+    applyResets()
+    const id = setInterval(applyResets, 60_000)
     return () => clearInterval(id)
   }, [])
 
-  // Apply resets on each boundary. Weekly bosses and weekly content reset
-  // Thursday (GMS v.264 unified them); monthly bosses (Black Mage) reset on the
-  // 1st of the month, so the weekly boundary must leave them alone.
+  // Keep open tabs in sync. The storage event only fires in other tabs, and the
+  // ref prevents the received state from being written straight back.
   useEffect(() => {
-    const boss = lastBossReset()
-    const quest = lastQuestReset()
-    const month = lastMonthlyReset()
-    setState((s) => {
-      let characters = s.characters
-      let bossResetAt = s.bossResetAt
-      let weeklyResetAt = s.weeklyResetAt
-      let monthlyResetAt = s.monthlyResetAt
-      let changed = false
-      if (boss > s.bossResetAt) {
-        characters = characters.map((c) => ({
-          ...c,
-          bossTasks: c.bossTasks.map((t) =>
-            isMonthlyBossTask(t) ? t : { ...t, done: false },
-          ),
-        }))
-        bossResetAt = boss
-        changed = true
-      }
-      if (month > s.monthlyResetAt) {
-        characters = characters.map((c) => ({
-          ...c,
-          bossTasks: c.bossTasks.map((t) =>
-            isMonthlyBossTask(t) ? { ...t, done: false } : t,
-          ),
-        }))
-        monthlyResetAt = month
-        changed = true
-      }
-      if (quest > s.weeklyResetAt) {
-        characters = characters.map((c) => ({
-          ...c,
-          weeklyTasks: c.weeklyTasks.map((t) => ({ ...t, done: false })),
-        }))
-        weeklyResetAt = quest
-        changed = true
-      }
-      return changed
-        ? { ...s, characters, bossResetAt, weeklyResetAt, monthlyResetAt }
-        : s
-    })
-  }, [now])
+    function handleStorage(event) {
+      if (event.key !== STORAGE_KEY || event.newValue === null) return
+      const nextState = deserializeState(event.newValue)
+      if (!nextState) return
+      skipNextSave.current = true
+      setState(nextState)
+      // Don't clear saveFailed here: a sync from another tab is not proof that
+      // *this* tab can write. saveFailed is owned by the local save effect and
+      // clears on the next successful local save.
+    }
 
-  // Persist on every change.
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  // Persist on every local change.
   useEffect(() => {
-    saveState(state)
+    if (skipNextSave.current) {
+      skipNextSave.current = false
+      return
+    }
+    setSaveFailed(!saveState(state))
   }, [state])
 
   const active =
@@ -217,6 +244,13 @@ export default function App() {
         Maplet
       </Title>
 
+      {saveFailed && (
+        <Alert color="red" title="Changes are not being saved" mt="md">
+          Browser storage is unavailable or full. Keep this tab open until the
+          issue is resolved.
+        </Alert>
+      )}
+
       <CharacterBar
         characters={state.characters}
         activeId={active.id}
@@ -229,7 +263,6 @@ export default function App() {
 
       <Tracker
         character={active}
-        now={now}
         onToggleBoss={toggleBoss}
         onRemoveBoss={removeBoss}
         onReorderBoss={reorderBoss}

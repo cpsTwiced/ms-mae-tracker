@@ -108,6 +108,16 @@ body {
   background: var(--tracker-scroll-thumb-hover);
 }
 
+.pickerModalScroll {
+  max-height: 55vh;
+}
+
+@media (max-width: 48em) {
+  .pickerModalScroll {
+    max-height: calc(100dvh - 10rem);
+  }
+}
+
 /* --- Character tiles ----------------------------------------------------- */
 
 /* Responsive roster grid — compact cards that wrap and never stretch too wide,
@@ -220,6 +230,15 @@ body {
   pointer-events: auto;
 }
 
+/* Touch devices have no hover, so the handle would otherwise be unreachable
+   until the tile is focused. On coarse pointers keep it always grabbable. */
+@media (hover: none) {
+  .charTileHandle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* The actions menu stays visible in the name row, vertically centered with the
    name. The button is taller than the name's line, so a negative block margin
    cancels the difference — keeping it aligned without stretching the row (it
@@ -270,4 +289,17 @@ body {
 .charAddTile[data-disabled] {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* --- Reduced motion ------------------------------------------------------ */
+
+/* Honor the OS "reduce motion" setting by dropping our custom transitions.
+   Mantine's own component animations are handled by `respectReducedMotion` in
+   the theme (main.jsx). */
+@media (prefers-reduced-motion: reduce) {
+  .charTile,
+  .charTileHandle,
+  .charAddTile {
+    transition: none;
+  }
 }

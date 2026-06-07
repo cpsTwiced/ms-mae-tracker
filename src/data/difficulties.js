@@ -7,5 +7,4 @@ export const DIFFICULTY_STYLE = {
   Hard: { bg: '#d05f93', fg: '#ffffff' },
   Chaos: { bg: '#3a3a3c', fg: '#f0e9d6' },
   Extreme: { bg: '#241f1b', fg: '#cf7f3f', border: '#7d5230' },
-  Hell: { bg: '#7a4a86', fg: '#f0e0f5' },
 }

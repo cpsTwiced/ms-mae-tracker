@@ -131,8 +131,10 @@ export const BOSS_CONTENT = [
     name: 'Limbo',
     cadence: 'weekly',
     img: '/bosses/limbo.png',
+    // Both modes share the Lv.285 entry requirement; progression past it is
+    // gated by Sacred Power / Authentic Force, not by level.
     difficulties: [
-      { d: 'Normal', level: 280 },
+      { d: 'Normal', level: 285 },
       { d: 'Hard', level: 285 },
     ],
   },

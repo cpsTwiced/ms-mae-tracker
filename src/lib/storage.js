@@ -2,29 +2,17 @@ import { lastBossReset, lastQuestReset, lastMonthlyReset } from './weeklyReset'
 import { BOSS_CONTENT } from '@/data/bossContent'
 import { WEEKLY_CONTENT } from '@/data/weeklyContent'
 
-const KEY = 'maple-tracker-v2'
-const OLD_KEY = 'maple-weekly-tasks'
+// Namespace for the first public release. Earlier dev-only builds used other
+// keys; their data is intentionally not migrated (a clean v1 starting point).
+export const STORAGE_KEY = 'maple-tracker-v1'
 
 // Hard cap on the roster size (main + mules).
 export const MAX_CHARACTERS = 6
 
-// Portraits are owned by the catalog, not user data, so we re-link tracked
-// entries to the catalog on load (see normalizeBossTask). This lets art added
-// for a boss show up for entries tracked before the portrait existed, including
-// legacy entries that predate `bossId` (matched by name as a fallback).
+// Portraits are owned by the catalog, not user data, so tracked entries are
+// re-linked by bossId on load. This keeps saved tasks in sync with catalog art.
 const BOSS_BY_ID = new Map(BOSS_CONTENT.map((boss) => [boss.id, boss]))
-const BOSS_BY_NAME = new Map(
-  BOSS_CONTENT.map((boss) => [boss.name.toLowerCase(), boss]),
-)
 const WEEKLY_BY_ID = new Map(WEEKLY_CONTENT.map((c) => [c.id, c]))
-
-function findCatalogBoss(bossId, name) {
-  if (bossId && BOSS_BY_ID.has(bossId)) return BOSS_BY_ID.get(bossId)
-  if (name && BOSS_BY_NAME.has(name.toLowerCase())) {
-    return BOSS_BY_NAME.get(name.toLowerCase())
-  }
-  return null
-}
 
 function uid() {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
@@ -97,35 +85,13 @@ function freshState() {
   }
 }
 
-function legacyBossesToTasks(bosses) {
-  if (!Array.isArray(bosses)) return []
-  return bosses
-    .map((b) => {
-      if (!isRecord(b)) return null
-      const name = stringOr(b.name, stringOr(b.text, 'Untitled'))
-      return {
-        id: idOr(b.id),
-        key: name,
-        bossId: null,
-        name,
-        img: null,
-        difficulty: '',
-        level: 0,
-        done: !!b.done,
-      }
-    })
-    .filter(Boolean)
-}
-
 function normalizeBossTask(task) {
   if (!isRecord(task)) return null
-  const name = stringOr(task.name, stringOr(task.text, 'Untitled'))
+  const name = stringOr(task.name, 'Untitled')
   const key = stringOr(task.key, name)
   const storedBossId = typeof task.bossId === 'string' ? task.bossId : null
   const storedImg = typeof task.img === 'string' ? task.img : null
-  // Re-link to the catalog (by id, else by name) so the portrait stays in sync
-  // even for legacy entries; fall back to stored values when nothing matches.
-  const boss = findCatalogBoss(storedBossId, name)
+  const boss = storedBossId ? BOSS_BY_ID.get(storedBossId) : null
   return {
     id: idOr(task.id),
     key: key || name,
@@ -140,7 +106,7 @@ function normalizeBossTask(task) {
 
 function normalizeWeeklyTask(task) {
   if (!isRecord(task)) return null
-  const name = stringOr(task.name, stringOr(task.text, 'Untitled'))
+  const name = stringOr(task.name, 'Untitled')
   const key = stringOr(task.key, stringOr(task.contentId, name))
   const contentId = stringOr(task.contentId, key || name)
   // Re-link the display name to the catalog so renamed entries stay in sync.
@@ -161,7 +127,7 @@ function normalizeTasks(tasks, normalizeTask) {
 
 function normalizeCharacter(c, index) {
   if (!isRecord(c)) return makeCharacter({ name: `Character ${index + 1}` })
-  const base = {
+  return {
     id: idOr(c.id),
     name: stringOr(c.name, `Character ${index + 1}`),
     level: numberOr(c.level, 1),
@@ -170,11 +136,6 @@ function normalizeCharacter(c, index) {
     bossTasks: normalizeTasks(c.bossTasks, normalizeBossTask),
     weeklyTasks: normalizeTasks(c.weeklyTasks, normalizeWeeklyTask),
   }
-  // Migrate the previous single `bosses` list into bossTasks.
-  if (Array.isArray(c.bosses) && base.bossTasks.length === 0) {
-    base.bossTasks = legacyBossesToTasks(c.bosses)
-  }
-  return base
 }
 
 function normalize(state) {
@@ -197,7 +158,7 @@ function normalize(state) {
   return {
     characters,
     activeId: ids.includes(state.activeId) ? state.activeId : ids[0],
-    bossResetAt: numberOr(state.bossResetAt ?? state.resetAt, lastBossReset()),
+    bossResetAt: numberOr(state.bossResetAt, lastBossReset()),
     weeklyResetAt: numberOr(state.weeklyResetAt, lastQuestReset()),
     monthlyResetAt: numberOr(state.monthlyResetAt, lastMonthlyReset()),
   }
@@ -205,39 +166,29 @@ function normalize(state) {
 
 export function loadState() {
   try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return normalize(JSON.parse(raw))
+    const state = deserializeState(localStorage.getItem(STORAGE_KEY))
+    if (state) return state
   } catch {
     // ignore corrupt data and fall through
-  }
-
-  // One-time migration from the original single-list MVP.
-  try {
-    const old = JSON.parse(localStorage.getItem(OLD_KEY))
-    if (old?.tasks?.length) {
-      const character = makeCharacter({ name: 'Main' })
-      character.bossTasks = legacyBossesToTasks(
-        old.tasks.map((t) => ({ id: t.id, name: t.text, done: t.done })),
-      )
-      return {
-        characters: [character],
-        activeId: character.id,
-        bossResetAt: old.resetAt ?? lastBossReset(),
-        weeklyResetAt: lastQuestReset(),
-        monthlyResetAt: lastMonthlyReset(),
-      }
-    }
-  } catch {
-    // ignore and start fresh
   }
 
   return freshState()
 }
 
+export function deserializeState(raw) {
+  if (typeof raw !== 'string') return null
+  try {
+    return normalize(JSON.parse(raw))
+  } catch {
+    return null
+  }
+}
+
 export function saveState(state) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    return true
   } catch {
-    // Ignore browser storage failures so the tracker stays usable.
+    return false
   }
 }

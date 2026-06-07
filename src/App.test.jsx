@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   render,
   screen,
@@ -8,6 +8,7 @@ import {
 } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import App from './App'
+import { STORAGE_KEY } from '@/lib/storage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -15,6 +16,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
 })
 
 function renderApp() {
@@ -61,7 +63,7 @@ describe('App', () => {
       'true',
     )
     await waitFor(() =>
-      expect(localStorage.getItem('maple-tracker-v2')).toContain('Mule'),
+      expect(localStorage.getItem(STORAGE_KEY)).toContain('Mule'),
     )
 
     first.unmount()
@@ -69,9 +71,58 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Mule' })).toBeInTheDocument()
   })
 
+  it('synchronizes state saved by another tab', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    renderApp()
+    setItem.mockClear()
+
+    const externalState = {
+      characters: [
+        {
+          id: 'other-tab',
+          name: 'Other Tab',
+          level: 275,
+          job: 'Hero',
+          server: 'Kronos',
+          bossTasks: [],
+          weeklyTasks: [],
+        },
+      ],
+      activeId: 'other-tab',
+      bossResetAt: Date.now(),
+      weeklyResetAt: Date.now(),
+      monthlyResetAt: Date.now(),
+    }
+
+    fireEvent(
+      window,
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        newValue: JSON.stringify(externalState),
+      }),
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Other Tab' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(setItem).not.toHaveBeenCalled()
+  })
+
+  it('warns when browser storage cannot save changes', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded')
+    })
+
+    renderApp()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Changes are not being saved',
+    )
+  })
+
   it('updates the selected character from the character pane', async () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -104,13 +155,13 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: 'HeroMain' })).toBeInTheDocument()
     await waitFor(() =>
-      expect(localStorage.getItem('maple-tracker-v2')).toContain('HeroMain'),
+      expect(localStorage.getItem(STORAGE_KEY)).toContain('HeroMain'),
     )
   })
 
   it('deletes the selected character after confirmation', async () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -156,13 +207,13 @@ describe('App', () => {
       'true',
     )
     await waitFor(() =>
-      expect(localStorage.getItem('maple-tracker-v2')).not.toContain('Mule'),
+      expect(localStorage.getItem(STORAGE_KEY)).not.toContain('Mule'),
     )
   })
 
   it('unchecks saved boss tasks after a boss reset boundary', async () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -203,7 +254,7 @@ describe('App', () => {
 
   it('keeps a monthly boss checked through a weekly reset', async () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -260,7 +311,7 @@ describe('App', () => {
 
   it('unchecks a monthly boss after the monthly boundary', async () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -303,7 +354,7 @@ describe('App', () => {
 
   it('toggles weekly content and removes it via the edit modal', async () => {
     localStorage.setItem(
-      'maple-tracker-v2',
+      STORAGE_KEY,
       JSON.stringify({
         characters: [
           {
@@ -338,7 +389,7 @@ describe('App', () => {
     fireEvent.click(checkbox)
     expect(checkbox).toBeChecked()
     await waitFor(() =>
-      expect(localStorage.getItem('maple-tracker-v2')).toContain('"done":true'),
+      expect(localStorage.getItem(STORAGE_KEY)).toContain('"done":true'),
     )
 
     // The panel has no X button; removal happens by unchecking it in the
@@ -352,5 +403,194 @@ describe('App', () => {
     expect(
       screen.queryByRole('checkbox', { name: 'Mark Culvert done' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('swaps a boss to a new difficulty in place without duplicating it', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        characters: [
+          {
+            id: 'main',
+            name: 'Main',
+            level: 285,
+            job: '',
+            server: '',
+            bossTasks: [
+              {
+                id: 'lotus-hard',
+                key: 'lotus:Hard',
+                bossId: 'lotus',
+                name: 'Lotus',
+                img: '/bosses/lotus.png',
+                difficulty: 'Hard',
+                level: 245,
+                done: false,
+              },
+              {
+                id: 'damien-normal',
+                key: 'damien:Normal',
+                bossId: 'damien',
+                name: 'Damien',
+                img: '/bosses/damien.png',
+                difficulty: 'Normal',
+                level: 210,
+                done: false,
+              },
+            ],
+            weeklyTasks: [],
+          },
+        ],
+        activeId: 'main',
+        bossResetAt: Date.now(),
+        weeklyResetAt: Date.now(),
+        monthlyResetAt: Date.now(),
+      }),
+    )
+
+    renderApp()
+
+    // Boss Content is the right column → the second Edit button.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[1])
+    // Lotus is already tracked at Hard; picking Normal must swap it in place.
+    fireEvent.click(
+      await screen.findByRole('checkbox', { name: 'Lotus Normal' }),
+    )
+
+    await waitFor(() => {
+      const tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)).characters[0]
+        .bossTasks
+      // Still two bosses (no duplicate Lotus), Lotus kept index 0, now Normal.
+      expect(tasks).toHaveLength(2)
+      expect(tasks[0].bossId).toBe('lotus')
+      expect(tasks[0].difficulty).toBe('Normal')
+      expect(tasks[1].bossId).toBe('damien')
+    })
+  })
+
+  it('unchecks weekly content after its boundary while leaving bosses alone', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        characters: [
+          {
+            id: 'main',
+            name: 'Main',
+            level: 260,
+            job: '',
+            server: '',
+            bossTasks: [
+              {
+                id: 'lotus-hard',
+                key: 'lotus:Hard',
+                bossId: 'lotus',
+                name: 'Lotus',
+                img: '/bosses/lotus.png',
+                difficulty: 'Hard',
+                level: 245,
+                done: true,
+              },
+            ],
+            weeklyTasks: [
+              {
+                id: 'guildculvert',
+                key: 'guildculvert',
+                contentId: 'guildculvert',
+                name: 'Culvert',
+                done: true,
+              },
+            ],
+          },
+        ],
+        activeId: 'main',
+        // Only the weekly-content boundary is stale; boss + monthly are current.
+        bossResetAt: Date.now(),
+        weeklyResetAt: 1,
+        monthlyResetAt: Date.now(),
+      }),
+    )
+
+    renderApp()
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('checkbox', { name: 'Mark Culvert done' }),
+      ).not.toBeChecked(),
+    )
+    // The boss boundary hasn't passed, so its check survives.
+    expect(
+      screen.getByRole('checkbox', { name: 'Mark Lotus done' }),
+    ).toBeChecked()
+  })
+
+  it('refuses to add past the character cap', () => {
+    const characters = Array.from({ length: 6 }, (_, i) => ({
+      id: `c${i}`,
+      name: `Char${i}`,
+      level: 200,
+      job: '',
+      server: '',
+      bossTasks: [],
+      weeklyTasks: [],
+    }))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        characters,
+        activeId: 'c0',
+        bossResetAt: Date.now(),
+        weeklyResetAt: Date.now(),
+        monthlyResetAt: Date.now(),
+      }),
+    )
+
+    renderApp()
+
+    // At the cap there's no enabled add button; the tile stays as a disabled,
+    // still-focusable button with the cap hint.
+    expect(
+      screen.queryByRole('button', { name: 'Add character' }),
+    ).not.toBeInTheDocument()
+    const addTile = screen.getByText('Add Character').closest('button')
+    expect(addTile).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('does not allow deleting the only character', async () => {
+    renderApp() // fresh state → a single "Main" character
+
+    fireEvent.click(screen.getByRole('button', { name: 'Main actions' }))
+    const del = await screen.findByRole('menuitem', {
+      name: 'Delete character',
+    })
+    // Disabled while it's the last character: clicking opens no confirm dialog.
+    fireEvent.click(del)
+    expect(screen.queryByText('Delete Main?')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Main' })).toBeInTheDocument()
+  })
+
+  it('ignores malformed or unrelated cross-tab storage events', () => {
+    renderApp() // single "Main"
+
+    // Wrong key, null value, and corrupt JSON must all be ignored without
+    // crashing or changing the UI.
+    fireEvent(
+      window,
+      new StorageEvent('storage', { key: 'some-other-key', newValue: '{}' }),
+    )
+    fireEvent(
+      window,
+      new StorageEvent('storage', { key: STORAGE_KEY, newValue: null }),
+    )
+    fireEvent(
+      window,
+      new StorageEvent('storage', { key: STORAGE_KEY, newValue: '{broken' }),
+    )
+
+    expect(screen.getByText('Maplet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Main' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

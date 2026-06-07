@@ -56,7 +56,3 @@ export function nextMonthlyReset(now = new Date()) {
 // Weekly quest / dungeon reset — same Thursday 00:00 UTC since v.264.
 export const lastQuestReset = lastBossReset
 export const nextQuestReset = nextBossReset
-
-// Back-compat aliases — the original tracker treated "weekly" as the Thursday reset.
-export const lastWeeklyReset = lastBossReset
-export const nextWeeklyReset = nextBossReset

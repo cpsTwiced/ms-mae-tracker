@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Card, Group, Stack, Text, Tooltip } from '@mantine/core'
 import {
   nextDailyReset,
@@ -46,7 +47,15 @@ const TIMERS = [
   },
 ]
 
-export default function Timers({ now, className }) {
+export default function Timers({ className }) {
+  // Own the 1-second tick here so only the countdowns re-render each second,
+  // not the whole planner tree above.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
   return (
     <Card withBorder radius="md" padding="sm" className={className}>
       <Text fw={600} mb="xs">

@@ -13,7 +13,6 @@ import {
 
 export default function Tracker({
   character,
-  now,
   onToggleBoss,
   onRemoveBoss,
   onReorderBoss,
@@ -59,7 +58,7 @@ export default function Tracker({
           page scrolls normally. */}
       <div className="plannerGrid">
         <div className="plannerCol">
-          <Timers now={now} className="timersPane" />
+          <Timers className="timersPane" />
 
           <ContentPanel
             title="Weekly Content"

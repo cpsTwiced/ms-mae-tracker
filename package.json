@@ -2,6 +2,14 @@
   "name": "maplet",
   "private": true,
   "version": "0.0.0",
+  "description": "A personal Global MapleStory (GMS) weekly-content tracker, modeled on the in-game Maple Planner.",
+  "license": "MIT",
+  "author": "Michh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpsTwiced/ms-mae-tracker.git"
+  },
+  "homepage": "https://github.com/cpsTwiced/ms-mae-tracker#readme",
   "type": "module",
   "packageManager": "npm@10.9.7",
   "engines": {

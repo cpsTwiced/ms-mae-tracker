@@ -62,7 +62,7 @@ function RowCard({
           {reordering && dragHandle}
           {/* Portrait, difficulty pill and name on one compact row. */}
           {showAvatar && (
-            <Avatar src={item.img || undefined} radius="sm" size={24}>
+            <Avatar src={item.img || undefined} alt="" radius="sm" size={24}>
               {initials(item.name)}
             </Avatar>
           )}
@@ -222,6 +222,37 @@ function SortableList({
   )
 }
 
+// Non-sortable list, used when a panel isn't reorderable. Skips dnd-kit
+// entirely — no DndContext and no per-row useSortable — so it's both lighter
+// and simpler than mounting SortableList with reordering permanently off.
+function PlainList({ items, allowRemove, showAvatar, onToggle, onRemove }) {
+  return (
+    <Stack gap={4}>
+      {items.map((i) => (
+        <RowCard
+          key={i.id}
+          item={i}
+          reordering={false}
+          allowRemove={allowRemove}
+          showAvatar={showAvatar}
+          onToggle={() => onToggle(i.id)}
+          onRemove={() => onRemove(i.id)}
+        />
+      ))}
+    </Stack>
+  )
+}
+
+// Rebuild the full flat task list after one section is reordered: swap in the
+// reordered section's new order and leave every other section untouched. Kept
+// pure (and exported) so the no-drop / no-duplicate invariant can be unit-tested
+// without simulating drag-and-drop.
+export function reorderWithinSection(sections, sectionKey, newSectionItems) {
+  return sections.flatMap((s) =>
+    s.key === sectionKey ? newSectionItems : s.items,
+  )
+}
+
 export default function ContentPanel({
   title,
   items,
@@ -239,6 +270,10 @@ export default function ContentPanel({
 }) {
   const [reordering, setReordering] = useState(false)
 
+  // When a panel isn't reorderable, render plain rows instead of mounting the
+  // full dnd-kit sortable stack that can never be used.
+  const ListComponent = reorderable ? SortableList : PlainList
+
   // `sections` (when given) groups rows under headers; otherwise it's one flat
   // list. Counts and the reorder/empty states work off the combined items.
   const allItems = sections ? sections.flatMap((s) => s.items) : items
@@ -248,11 +283,7 @@ export default function ContentPanel({
   // Reordering inside one section rewrites the full list, keeping the other
   // sections in their current order.
   function reorderSection(sectionKey, newSectionItems) {
-    onReorder(
-      sections.flatMap((s) =>
-        s.key === sectionKey ? newSectionItems : s.items,
-      ),
-    )
+    onReorder(reorderWithinSection(sections, sectionKey, newSectionItems))
   }
 
   const listProps = { reordering, allowRemove, showAvatar, onToggle, onRemove }
@@ -279,7 +310,7 @@ export default function ContentPanel({
                     {s.items.filter((i) => i.done).length}/{s.items.length}
                   </Text>
                 </Group>
-                <SortableList
+                <ListComponent
                   items={s.items}
                   onReorder={(next) => reorderSection(s.key, next)}
                   {...listProps}
@@ -288,7 +319,7 @@ export default function ContentPanel({
             ))}
         </Stack>
       ) : (
-        <SortableList items={items} onReorder={onReorder} {...listProps} />
+        <ListComponent items={items} onReorder={onReorder} {...listProps} />
       )}
     </>
   )

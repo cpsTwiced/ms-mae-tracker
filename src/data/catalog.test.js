@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { BOSS_CONTENT } from './bossContent'
+import { BOSS_CONTENT, MONTHLY_BOSS_IDS } from './bossContent'
 import { DIFFICULTY_STYLE } from './difficulties'
 import { WEEKLY_CONTENT } from './weeklyContent'
 
@@ -45,5 +45,32 @@ describe('content catalogs', () => {
         true,
       )
     })
+  })
+
+  it('gives every boss a valid cadence, image slot, and difficulties', () => {
+    BOSS_CONTENT.forEach((boss) => {
+      expect(['weekly', 'monthly']).toContain(boss.cadence)
+      expect(boss.difficulties.length).toBeGreaterThan(0)
+      // img is either a string path or null (initials-avatar fallback).
+      expect(boss.img === null || typeof boss.img === 'string').toBe(true)
+    })
+  })
+
+  it('orders each boss difficulties by non-decreasing entry level', () => {
+    BOSS_CONTENT.forEach((boss) => {
+      const levels = boss.difficulties.map((d) => d.level)
+      levels.forEach((level) => expect(Number.isFinite(level)).toBe(true))
+      const ascending = [...levels].sort((a, b) => a - b)
+      expect(levels).toEqual(ascending)
+    })
+  })
+
+  it('derives MONTHLY_BOSS_IDS from exactly the monthly-cadence bosses', () => {
+    const expected = BOSS_CONTENT.filter((b) => b.cadence === 'monthly').map(
+      (b) => b.id,
+    )
+    expect([...MONTHLY_BOSS_IDS].sort()).toEqual([...expected].sort())
+    // This is the invariant the weekly/monthly reset routing depends on.
+    expect(MONTHLY_BOSS_IDS.has('blackmage')).toBe(true)
   })
 })

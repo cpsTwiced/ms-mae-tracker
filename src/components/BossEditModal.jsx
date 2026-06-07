@@ -45,7 +45,7 @@ export default function BossEditModal({
             w={isMobile ? '100%' : 220}
             style={{ flexShrink: 0, minWidth: 0 }}
           >
-            <Avatar src={boss.img || undefined} radius="sm" size={40}>
+            <Avatar src={boss.img || undefined} alt="" radius="sm" size={40}>
               {initials(boss.name)}
             </Avatar>
             <div style={{ minWidth: 0 }}>
@@ -75,6 +75,7 @@ export default function BossEditModal({
                   key={diff.d}
                   w={110}
                   checked={checked}
+                  aria-label={`${boss.name} ${diff.d}`}
                   onChange={(e) =>
                     onSetDifficulty(boss, diff, e.currentTarget.checked)
                   }
@@ -100,7 +101,7 @@ export default function BossEditModal({
       title="Edit Boss Content"
       size={820}
     >
-      <ScrollStatusArea autosize mah="55vh">
+      <ScrollStatusArea autosize className="pickerModalScroll">
         <Stack gap="md">
           {SECTIONS.map(({ cadence, label }) => {
             const bosses = BOSS_CONTENT.filter(
