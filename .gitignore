@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.husky/_/
+.claude/
+CLAUDE.md
+
+*.local
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+.idea/
+.vscode/
