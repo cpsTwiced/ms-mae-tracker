@@ -1,0 +1,305 @@
+body {
+  margin: 0;
+}
+
+:root {
+  --tracker-scrollbar-size: calc(0.375rem * var(--mantine-scale));
+  --tracker-scroll-gap: var(--mantine-spacing-xs);
+  --tracker-scroll-track: rgba(255, 255, 255, 0.04);
+  --tracker-scroll-thumb: rgba(255, 255, 255, 0.22);
+  --tracker-scroll-thumb-hover: rgba(255, 255, 255, 0.32);
+}
+
+/* --- Planner layout ----------------------------------------------------- */
+
+/* Two equal-width columns: Timers + Weekly stacked on the left, Boss on the
+   right. On wide screens (Mantine `md`, 62em) both columns share one shorter
+   height, with a hard minimum so the panes never collapse too far. Long lists
+   scroll inside the panes, leaving background visible below the planner. On
+   narrow screens the columns stack and the page scrolls normally. */
+.plannerGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+}
+
+.plannerCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  min-width: 0;
+}
+
+@media (min-width: 62em) {
+  .plannerGrid {
+    --planner-column-min-height: 22rem;
+    --planner-column-height: clamp(
+      var(--planner-column-min-height),
+      calc(100vh - 18rem),
+      36rem
+    );
+
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .plannerCol {
+    flex: 1 1 0;
+    height: var(--planner-column-height);
+    min-height: var(--planner-column-min-height);
+  }
+
+  .plannerCol > .pane {
+    flex: 1 1 0;
+  }
+}
+
+/* Keep Timers at its natural height; only the content lists shrink/scroll. */
+.timersPane {
+  flex-shrink: 0;
+}
+
+/* A content pane. On narrow screens it's a plain, naturally-sized card and the
+   page scrolls; once the desktop two-column layout gives the column a fixed
+   shared height, the body scrolls instead. Mantine Card is a flex column, so
+   the header stays put and only `.paneBody` scrolls. */
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+@media (min-width: 62em) {
+  .pane {
+    flex: 0 1 auto;
+  }
+
+  .paneBody {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.scrollStatusViewport[data-scroll-required] {
+  padding-inline-end: calc(
+    var(--scrollarea-scrollbar-size) + var(--tracker-scroll-gap)
+  ) !important;
+}
+
+.scrollStatusBar {
+  background: var(--tracker-scroll-track);
+  border-radius: var(--tracker-scrollbar-size);
+  opacity: 1;
+}
+
+.scrollStatusBar:hover {
+  background: var(--tracker-scroll-track);
+}
+
+.scrollStatusThumb {
+  --thumb-opacity: 1;
+
+  background: var(--tracker-scroll-thumb);
+  border-radius: var(--tracker-scrollbar-size);
+}
+
+.scrollStatusBar:hover > .scrollStatusThumb {
+  background: var(--tracker-scroll-thumb-hover);
+}
+
+.pickerModalScroll {
+  max-height: 55vh;
+}
+
+@media (max-width: 48em) {
+  .pickerModalScroll {
+    max-height: calc(100dvh - 10rem);
+  }
+}
+
+/* --- Character tiles ----------------------------------------------------- */
+
+/* Responsive roster grid — compact cards that wrap and never stretch too wide,
+   rather than a fixed number of full-width columns. */
+/* A single horizontal row of tiles (characters plus the Add tile) that scrolls
+   sideways when the roster is wider than the pane, instead of wrapping onto new
+   rows. Each tile keeps a fixed width and refuses to shrink so they stay
+   readable while scrolling; align-items: stretch keeps the Add tile the same
+   height as the character tiles. */
+.charGrid {
+  display: flex;
+  align-items: stretch;
+  gap: var(--mantine-spacing-sm);
+  overflow-x: auto;
+}
+
+/* Only reserve the gap between the tiles and the scrollbar when the roster
+   actually overflows; otherwise the pane keeps the same bottom padding as the
+   other panes. */
+.charGrid[data-scrollable] {
+  padding-bottom: var(--tracker-scroll-gap);
+}
+
+/* Force a visible horizontal scrollbar that matches the content panes/modals
+   (which use Mantine ScrollArea via the same --tracker-scroll-* tokens). macOS
+   hides overlay scrollbars at rest, so we style ONLY the WebKit pseudo-elements
+   (no standard `scrollbar-width`/`scrollbar-color`): when those standard
+   properties are present, current Chrome ignores `::-webkit-scrollbar` and
+   reverts to the hidden overlay bar. */
+.charGrid::-webkit-scrollbar {
+  height: var(--tracker-scrollbar-size);
+}
+
+.charGrid::-webkit-scrollbar-track {
+  background: var(--tracker-scroll-track);
+  border-radius: var(--tracker-scrollbar-size);
+}
+
+.charGrid::-webkit-scrollbar-thumb {
+  background: var(--tracker-scroll-thumb);
+  border-radius: var(--tracker-scrollbar-size);
+}
+
+.charGrid::-webkit-scrollbar-thumb:hover {
+  background: var(--tracker-scroll-thumb-hover);
+}
+
+.charGrid > * {
+  flex: 0 0 200px;
+}
+
+/* Each character is a tile with even padding on every edge. A transparent
+   layer covers the whole tile so a click anywhere switches the active
+   character; the drag handle (top-left) and actions menu (top-right) are pinned
+   to the corners so they don't add to the resting padding — they fade in on
+   hover/focus and overlap the content only while hovering. The active tile gets
+   a sage tint + border. */
+.charTile {
+  position: relative;
+  height: 100%;
+  padding: 12px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-4);
+  background: var(--mantine-color-dark-6);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.charTile:hover {
+  background: var(--mantine-color-dark-5);
+}
+
+.charTile[data-active] {
+  background: var(--mantine-color-sage-light);
+  border-color: var(--mantine-color-sage-filled);
+}
+
+/* The full-tile click layer, behind the content. */
+.charTileSelect {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* The visible content sits above the click layer but is click-through, so taps
+   fall to it; the handle/menu re-enable pointer events for themselves. */
+.charTileBody {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The drag handle is pinned to the top-left corner so it doesn't widen the
+   resting padding; it's click-through until revealed on hover/focus. */
+.charTileHandle {
+  position: absolute;
+  top: 7px;
+  left: 3px;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.charTile:hover .charTileHandle,
+.charTile:focus-within .charTileHandle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Touch devices have no hover, so the handle would otherwise be unreachable
+   until the tile is focused. On coarse pointers keep it always grabbable. */
+@media (hover: none) {
+  .charTileHandle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* The actions menu stays visible in the name row, vertically centered with the
+   name. The button is taller than the name's line, so a negative block margin
+   cancels the difference — keeping it aligned without stretching the row (it
+   overflows a few px into the padding instead). The body is click-through, so
+   re-enable clicks on the button itself. */
+.charTileKebab {
+  margin-block: calc((1rem - var(--ai-size)) / 2);
+  pointer-events: auto;
+}
+
+/* The controls read as plain glyphs — never a hover/active background. */
+.charTile .charTileHandle:hover,
+.charTile .charTileHandle:active,
+.charTile .charTileKebab:hover,
+.charTile .charTileKebab:active {
+  background-color: transparent;
+}
+
+/* Keep the drag handle put when pressed — Mantine nudges buttons down 1px on
+   :active, which is jarring on a handle you're about to grab. */
+.charTile .charTileHandle:active {
+  transform: none;
+}
+
+/* The dashed "add" tile that sits after the roster. */
+.charAddTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 5.5rem;
+  padding: 12px;
+  border: 1px dashed var(--mantine-color-dark-3);
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-dimmed);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.charAddTile:hover {
+  background: var(--mantine-color-dark-6);
+  border-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-sage-3);
+}
+
+.charAddTile[data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Reduced motion ------------------------------------------------------ */
+
+/* Honor the OS "reduce motion" setting by dropping our custom transitions.
+   Mantine's own component animations are handled by `respectReducedMotion` in
+   the theme (main.jsx). */
+@media (prefers-reduced-motion: reduce) {
+  .charTile,
+  .charTileHandle,
+  .charAddTile {
+    transition: none;
+  }
+}
