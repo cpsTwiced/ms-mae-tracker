@@ -171,6 +171,9 @@ function SortableList({
     if (over && active.id !== over.id) {
       const oldIndex = items.findIndex((i) => i.id === active.id)
       const newIndex = items.findIndex((i) => i.id === over.id)
+      // Items can vanish mid-drag (e.g. a cross-tab sync replaces the list);
+      // arrayMove with -1 would silently relocate the last item.
+      if (oldIndex === -1 || newIndex === -1) return
       onReorder(arrayMove(items, oldIndex, newIndex))
     }
   }

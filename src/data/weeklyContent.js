@@ -36,6 +36,7 @@ export const weeklyCategoryOf = (task) =>
 
 // Catalog position of a tracked task, so the panel can show items in the same
 // order as the edit modal regardless of when they were added. Unknown ids sort
-// last.
+// last (finite fallback: Infinity - Infinity is NaN, which subtraction-based
+// comparators must never return).
 export const weeklyOrderOf = (task) =>
-  ORDER_BY_ID.get(task.contentId) ?? Infinity
+  ORDER_BY_ID.get(task.contentId) ?? Number.MAX_SAFE_INTEGER
