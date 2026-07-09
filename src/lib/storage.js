@@ -37,6 +37,13 @@ function idOr(value) {
   return stringOr(value) || uid()
 }
 
+// Reset timestamps must never be in the future: a corrupted future value would
+// silently disable that reset until the future date arrives, surviving every
+// reload. Clamping to the latest boundary self-heals such data.
+function resetAtOr(value, latest) {
+  return Math.min(numberOr(value, latest), latest)
+}
+
 export function makeCharacter(fields = {}) {
   return {
     id: uid(),
@@ -158,9 +165,9 @@ function normalize(state) {
   return {
     characters,
     activeId: ids.includes(state.activeId) ? state.activeId : ids[0],
-    bossResetAt: numberOr(state.bossResetAt, lastBossReset()),
-    weeklyResetAt: numberOr(state.weeklyResetAt, lastQuestReset()),
-    monthlyResetAt: numberOr(state.monthlyResetAt, lastMonthlyReset()),
+    bossResetAt: resetAtOr(state.bossResetAt, lastBossReset()),
+    weeklyResetAt: resetAtOr(state.weeklyResetAt, lastQuestReset()),
+    monthlyResetAt: resetAtOr(state.monthlyResetAt, lastMonthlyReset()),
   }
 }
 

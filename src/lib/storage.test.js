@@ -133,6 +133,23 @@ describe('loadState', () => {
     expect(typeof s.monthlyResetAt).toBe('number')
   })
 
+  it('clamps future reset timestamps so resets self-heal', () => {
+    const character = makeCharacter({ name: 'A' })
+    const future = Date.now() + 365 * 24 * 60 * 60 * 1000
+    saveState({
+      characters: [character],
+      activeId: character.id,
+      bossResetAt: future,
+      weeklyResetAt: future,
+      monthlyResetAt: future,
+    })
+
+    const s = loadState()
+    expect(s.bossResetAt).toBeLessThanOrEqual(Date.now())
+    expect(s.weeklyResetAt).toBeLessThanOrEqual(Date.now())
+    expect(s.monthlyResetAt).toBeLessThanOrEqual(Date.now())
+  })
+
   it('repairs duplicate character ids', () => {
     saveState({
       characters: [

@@ -308,6 +308,9 @@ export default function CharacterBar({
     if (over && dragged.id !== over.id) {
       const oldIndex = characters.findIndex((c) => c.id === dragged.id)
       const newIndex = characters.findIndex((c) => c.id === over.id)
+      // Characters can vanish mid-drag (e.g. a cross-tab sync replaces the
+      // roster); arrayMove with -1 would silently relocate the last one.
+      if (oldIndex === -1 || newIndex === -1) return
       onReorder(arrayMove(characters, oldIndex, newIndex))
     }
   }

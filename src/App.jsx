@@ -22,7 +22,11 @@ import CharacterBar from '@/components/CharacterBar'
 export default function App() {
   const [state, setState] = useState(loadState)
   const [saveFailed, setSaveFailed] = useState(false)
-  const skipNextSave = useRef(false)
+  // Serialized form of the last state written to (or received from) storage.
+  // The persist effect skips the write only when the current state matches it
+  // exactly, so a local mutation that races a cross-tab sync is never swallowed
+  // (a boolean "skip next save" flag would drop whichever change lost the race).
+  const lastSavedRef = useRef(null)
 
   // Apply resets when a boundary passes. Checked on mount and once a minute
   // while the app stays open — reset times are minute-granular, so a per-second
@@ -86,7 +90,7 @@ export default function App() {
       if (event.key !== STORAGE_KEY || event.newValue === null) return
       const nextState = deserializeState(event.newValue)
       if (!nextState) return
-      skipNextSave.current = true
+      lastSavedRef.current = JSON.stringify(nextState)
       setState(nextState)
       // Don't clear saveFailed here: a sync from another tab is not proof that
       // *this* tab can write. saveFailed is owned by the local save effect and
@@ -97,13 +101,17 @@ export default function App() {
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
 
-  // Persist on every local change.
+  // Persist on every local change. Skipped only when the state is exactly what
+  // was last saved / received, so cross-tab syncs aren't echoed back.
   useEffect(() => {
-    if (skipNextSave.current) {
-      skipNextSave.current = false
-      return
+    const serialized = JSON.stringify(state)
+    if (serialized === lastSavedRef.current) return
+    if (saveState(state)) {
+      lastSavedRef.current = serialized
+      setSaveFailed(false)
+    } else {
+      setSaveFailed(true)
     }
-    setSaveFailed(!saveState(state))
   }, [state])
 
   const active =
@@ -165,8 +173,10 @@ export default function App() {
           return { ...c, bossTasks: [...c.bossTasks, makeBossTask(boss, diff)] }
         return {
           ...c,
+          // Carry `done` over: correcting the difficulty of a boss already
+          // cleared this week shouldn't lose the checkmark.
           bossTasks: c.bossTasks.map((t, i) =>
-            i === idx ? makeBossTask(boss, diff) : t,
+            i === idx ? { ...makeBossTask(boss, diff), done: t.done } : t,
           ),
         }
       }),
