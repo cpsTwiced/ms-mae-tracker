@@ -175,6 +175,8 @@ export const BOSS_CONTENT = [
     name: 'Kai',
     cadence: 'weekly',
     img: '/bosses/kai.png',
+    // Availability caveat surfaced as an info tooltip in the boss picker.
+    note: 'Only available to characters on Challenger World.',
     difficulties: [
       { d: 'Normal', level: 270 },
       { d: 'Hard', level: 280 },

@@ -6,6 +6,7 @@ import {
   Group,
   Stack,
   Text,
+  Tooltip,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { BOSS_CONTENT } from '@/data/bossContent'
@@ -49,9 +50,23 @@ export default function BossEditModal({
               {initials(boss.name)}
             </Avatar>
             <div style={{ minWidth: 0 }}>
-              <Text size="sm" truncate>
-                {boss.name}
-              </Text>
+              <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+                <Text size="sm" truncate style={{ minWidth: 0 }}>
+                  {boss.name}
+                </Text>
+                {boss.note && (
+                  <Tooltip withArrow multiline w={220} label={boss.note}>
+                    <Text
+                      size="sm"
+                      c="sage"
+                      aria-label={boss.note}
+                      style={{ cursor: 'help', flexShrink: 0 }}
+                    >
+                      ⓘ
+                    </Text>
+                  </Tooltip>
+                )}
+              </Group>
               <Text size="xs" c="dimmed">
                 Lv. {boss.difficulties[0].level}
               </Text>

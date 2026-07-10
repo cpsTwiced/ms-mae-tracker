@@ -76,4 +76,14 @@ describe('BossEditModal', () => {
       true,
     )
   })
+
+  it('surfaces a catalog note as an info indicator (Kai is Challenger-only)', () => {
+    renderModal()
+    // Only bosses with a `note` get the info glyph, labelled with the note.
+    expect(
+      screen.getByLabelText(
+        'Only available to characters on Challenger World.',
+      ),
+    ).toBeInTheDocument()
+  })
 })
