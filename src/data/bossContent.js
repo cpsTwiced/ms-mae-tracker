@@ -153,6 +153,34 @@ export const BOSS_CONTENT = [
     ],
   },
   {
+    // Malefic Star — final boss of the Black Sea (Grandis), added in v.269
+    // "Ride the Lightning". Records reset weekly (Thursday), counted once per
+    // week per difficulty, like the other Grandis weeklies. Story/Practice
+    // modes exist in-game but don't count as clears, so only Normal/Hard are
+    // tracked. GMS entry levels (KMS uses a flat Lv.280 for both).
+    id: 'maleficstar',
+    name: 'Malefic Star',
+    cadence: 'weekly',
+    img: '/bosses/maleficstar.png',
+    difficulties: [
+      { d: 'Normal', level: 270 },
+      { d: 'Hard', level: 280 },
+    ],
+  },
+  {
+    // Kai — weekly boss added in v.269, exclusive to Challenger World
+    // characters (solo-only). Standard Thursday weekly reset; does not count
+    // toward the 12-boss weekly clear limit.
+    id: 'kai',
+    name: 'Kai',
+    cadence: 'weekly',
+    img: '/bosses/kai.png',
+    difficulties: [
+      { d: 'Normal', level: 270 },
+      { d: 'Hard', level: 280 },
+    ],
+  },
+  {
     // Talahart (Lv.290) endgame boss; both difficulties enter at Lv.290, gated
     // by Sacred Power / Authentic Force.
     id: 'baldrix',

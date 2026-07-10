@@ -66,7 +66,7 @@ npm run dev      # start the dev server at http://localhost:5173
 
 ## Boss portraits
 
-Boss portraits are **self-hosted** in `public/bosses/`. Most were sourced once from the community **maplestory.io** sprite API — there is no official source for GMS boss art. The newest two, **The First Adversary** and **Baldrix**, come from the community **MapleStory Wiki** (maplestorywiki.net) instead, since maplestory.io has no usable render for them. The running app makes no external API calls. Gloom's full giant-boss body can't be rendered through the API, so it uses its **Gloom Core** sprite (the purple eye) as the portrait; a name-initials avatar still stands in for any boss without art. All art is Nexon's; this is a personal fan project.
+Boss portraits are **self-hosted** in `public/bosses/`. Most were sourced once from the community **maplestory.io** sprite API — there is no official source for GMS boss art. The newest additions — **The First Adversary**, **Baldrix**, **Malefic Star**, and **Kai** — come from the community **MapleStory Wiki** (maplestorywiki.net) instead, since maplestory.io has no usable render for them. The running app makes no external API calls. Gloom's full giant-boss body can't be rendered through the API, so it uses its **Gloom Core** sprite (the purple eye) as the portrait; a name-initials avatar still stands in for any boss without art. All art is Nexon's; this is a personal fan project.
 
 ## Status / scope
 
