@@ -1,0 +1,157 @@
+import { describe, it, expect, afterEach } from 'vitest'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { MantineProvider } from '@mantine/core'
+import StarForcePanel from './StarForcePanel'
+import { expectedRun } from '@/lib/starforce'
+import { formatMeso } from '@/lib/format'
+
+afterEach(cleanup)
+
+function renderPanel() {
+  return render(
+    <MantineProvider>
+      <StarForcePanel />
+    </MantineProvider>,
+  )
+}
+
+function fill(label, value) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } })
+}
+
+describe('StarForcePanel', () => {
+  it('starts empty with a prompt instead of results', () => {
+    renderPanel()
+    expect(
+      screen.getAllByText('Enter an item level to price the run.').length,
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText('Enhancement table')).toBeInTheDocument()
+  })
+
+  it('computes once level and a valid range are entered', () => {
+    renderPanel()
+    fill('Item level', '200')
+    fill('Current star', '17')
+    fill('Target star', '18')
+
+    const run = expectedRun(200, 17, 18, { starCatch: true, mode: 1 })
+    expect(
+      screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
+    ).toBeInTheDocument()
+    expect(screen.getByText('17 → 18')).toBeInTheDocument()
+    // Attempts render as a whole-number value with a separate unit span.
+    expect(screen.getByText(run.attempts.toFixed(0))).toBeInTheDocument()
+    expect(screen.getByText('attempts')).toBeInTheDocument()
+  })
+
+  it('prompts for a target when the range is inverted', () => {
+    renderPanel()
+    fill('Item level', '200')
+    fill('Current star', '20')
+    fill('Target star', '18')
+    expect(
+      screen.getAllByText('Pick a target above your current star.').length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('level preset pills fill the level field', () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: '250' }))
+    expect(screen.getByLabelText('Item level').value).toBe('250')
+  })
+
+  it('strips non-digits from the star inputs', () => {
+    renderPanel()
+    fill('Current star', '1a7')
+    expect(screen.getByLabelText('Current star').value).toBe('17')
+  })
+
+  it('safeguard changes the expected cost', () => {
+    renderPanel()
+    fill('Item level', '200')
+    fill('Current star', '15')
+    fill('Target star', '16')
+
+    const plain = expectedRun(200, 15, 16, { starCatch: true, mode: 1 })
+    fireEvent.click(screen.getByLabelText('Safeguard'))
+    const guarded = expectedRun(200, 15, 16, {
+      starCatch: true,
+      mode: 1,
+      safeguard: true,
+    })
+    expect(
+      screen.getByText(
+        `${Math.round(guarded.cost).toLocaleString('en-US')} mesos`,
+      ),
+    ).toBeInTheDocument()
+    expect(Math.round(guarded.cost)).not.toBe(Math.round(plain.cost))
+  })
+
+  it('shining star force applies the cost discount and boom reduction', () => {
+    renderPanel()
+    fill('Item level', '200')
+    fill('Current star', '17')
+    fill('Target star', '18')
+    fireEvent.click(screen.getByLabelText('Shining Star Force'))
+
+    // The single toggle drives both engine flags.
+    const run = expectedRun(200, 17, 18, {
+      starCatch: true,
+      mode: 1,
+      eventCost30: true,
+      eventBoom30: true,
+    })
+    expect(
+      screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
+    ).toBeInTheDocument()
+  })
+
+  it('1+1 star force stacks with shining star force', () => {
+    renderPanel()
+    fill('Item level', '160')
+    fill('Current star', '8')
+    fill('Target star', '12')
+    fireEvent.click(screen.getByLabelText('Shining Star Force'))
+    fireEvent.click(screen.getByLabelText('1+1 Star Force'))
+
+    const run = expectedRun(160, 8, 12, {
+      starCatch: true,
+      mode: 1,
+      eventCost30: true,
+      eventBoom30: true,
+      eventPlusOne: true,
+    })
+    // 2-star jumps show in the table and the combined cost reflects all flags.
+    expect(screen.getByText('8 → 10')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
+    ).toBeInTheDocument()
+  })
+
+  it('shows median and unlucky simulation stats', () => {
+    renderPanel()
+    fill('Item level', '150')
+    fill('Current star', '14')
+    fill('Target star', '15')
+    // Deterministic seed: the stat strip renders concrete meso figures.
+    expect(screen.getByText('Median run')).toBeInTheDocument()
+    const attempt = expectedRun(150, 14, 15, { starCatch: true })
+    expect(attempt.cost).toBeGreaterThan(0)
+    // Median of a 14→15 climb is a whole number of attempt costs.
+    expect(
+      screen.getAllByText((t) => /^\d+(\.\d+)?[kmbt]$/.test(t)).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('notes the star cap for low-level items', () => {
+    renderPanel()
+    fill('Item level', '130')
+    expect(screen.getByText('a Lv.130 item caps at 20 ★')).toBeInTheDocument()
+  })
+})
+
+describe('formatMeso shorthand used by the panel', () => {
+  it('is lowercase per MapleStory convention', () => {
+    expect(formatMeso(1500000000)).toBe('1.5b')
+  })
+})

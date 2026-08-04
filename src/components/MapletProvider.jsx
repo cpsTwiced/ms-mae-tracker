@@ -1,4 +1,10 @@
-import { Checkbox, MantineProvider, Modal, createTheme } from '@mantine/core'
+import {
+  Checkbox,
+  MantineProvider,
+  Modal,
+  Switch,
+  createTheme,
+} from '@mantine/core'
 
 export const theme = createTheme({
   primaryColor: 'sage',
@@ -48,6 +54,10 @@ export const theme = createTheme({
     // Slightly smaller than Mantine's default 'sm' checkbox across the app.
     Checkbox: Checkbox.extend({
       defaultProps: { size: 'xs' },
+    }),
+    // Plain track + solid round knob per the design — no inner indicator dot.
+    Switch: Switch.extend({
+      defaultProps: { withThumbIndicator: false },
     }),
   },
 })

@@ -1,19 +1,21 @@
-// Compact meso amounts: 3 significant figures with K/M/B/T units, exact
-// below 1000. Rounding happens before unit selection so 999,950 → "1M".
+// Compact meso amounts in MapleStory's lowercase shorthand (232b, 350m,
+// 1.5b): one decimal, dropped once the leading figure reaches three digits.
 export function formatMeso(n) {
   if (!Number.isFinite(n)) return '—'
-  const r = Number(n.toPrecision(3))
-  const abs = Math.abs(r)
+  if (n <= 0) return '0'
   const units = [
-    [1e12, 'T'],
-    [1e9, 'B'],
-    [1e6, 'M'],
-    [1e3, 'K'],
+    [1e12, 't'],
+    [1e9, 'b'],
+    [1e6, 'm'],
+    [1e3, 'k'],
   ]
   for (const [div, suffix] of units) {
-    if (abs >= div) return `${Number((r / div).toPrecision(3))}${suffix}`
+    if (n >= div) {
+      const v = n / div
+      return `${v.toFixed(v >= 100 ? 0 : 1)}${suffix}`
+    }
   }
-  return `${r}`
+  return `${Math.round(n)}`
 }
 
 export function formatCountdown(ms) {

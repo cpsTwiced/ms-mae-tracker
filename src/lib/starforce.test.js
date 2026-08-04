@@ -4,6 +4,8 @@ import {
   attemptCost,
   boomResetStar,
   expectedRun,
+  simulateRuns,
+  mulberry32,
   maxStarForLevel,
 } from './starforce'
 
@@ -77,6 +79,9 @@ describe('attemptOdds', () => {
     expect(guaranteed).toEqual({ success: 1, maintain: 0, boom: 0 })
     expect(attemptOdds(14, { eventGuaranteed: true }).success).toBe(0.3)
     expect(attemptOdds(17, { eventBoom30: true }).boom).toBeCloseTo(0.0476)
+    // The boom event only reaches attempts below 21★.
+    expect(attemptOdds(21, { eventBoom30: true }).boom).toBeCloseTo(0.1275)
+    expect(attemptOdds(20, { eventBoom30: true }).boom).toBeCloseTo(0.0735)
   })
 })
 
@@ -84,6 +89,11 @@ describe('attemptCost', () => {
   it('uses the sub-10★ linear base with round-then-×100', () => {
     // 150³ × 1 / 2500 = 1350 → (1350 + 10) × 100.
     expect(attemptCost(150, 0)).toBe(136000)
+  })
+
+  it('floors the level to its tens before pricing', () => {
+    expect(attemptCost(287, 17)).toBe(attemptCost(280, 17))
+    expect(attemptCost(159, 15)).toBe(attemptCost(150, 15))
   })
 
   it('applies MVP discount only through 16★', () => {
@@ -204,8 +214,47 @@ describe('expectedRun', () => {
     expect(expectedRun(200, 22, 22)).toEqual({
       cost: 0,
       booms: 0,
+      attempts: 0,
       perStar: [],
     })
     expect(expectedRun(200, 25, 22).cost).toBe(0)
+  })
+
+  it('counts expected attempts', () => {
+    // 14★ → 15★ is a plain geometric: 1/0.3 attempts.
+    expect(expectedRun(200, 14, 15).attempts).toBeCloseTo(1 / 0.3, 10)
+  })
+
+  it('jumps two stars per success under the +1★ event', () => {
+    const opts = { eventPlusOne: true }
+    const run = expectedRun(200, 9, 12, opts)
+    // 9★ jumps to 11★ (skipping 10★), then 11★ → 12★ normally.
+    expect(run.perStar.map((r) => r.star)).toEqual([9, 11])
+    expect(run.cost).toBeCloseTo(
+      attemptCost(200, 9) / 0.55 + attemptCost(200, 11) / 0.45,
+      6,
+    )
+    // Without the event all three stars are attempted.
+    expect(expectedRun(200, 9, 12).perStar.map((r) => r.star)).toEqual([
+      9, 10, 11,
+    ])
+  })
+})
+
+describe('simulateRuns', () => {
+  it('is deterministic for a fixed seed and tracks the closed form', () => {
+    const a = simulateRuns(200, 15, 17, {}, { runs: 2000, rng: mulberry32(1) })
+    const b = simulateRuns(200, 15, 17, {}, { runs: 2000, rng: mulberry32(1) })
+    expect(a).toEqual(b)
+    const expected = expectedRun(200, 15, 17).cost
+    // Median of a right-skewed cost distribution sits below the mean but in
+    // the same ballpark.
+    expect(a.median).toBeGreaterThan(expected * 0.2)
+    expect(a.median).toBeLessThan(expected * 2)
+    expect(a.p90).toBeGreaterThanOrEqual(a.median)
+  })
+
+  it('returns null when there is nothing to simulate', () => {
+    expect(simulateRuns(200, 22, 22)).toBeNull()
   })
 })

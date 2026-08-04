@@ -10,6 +10,73 @@ body {
   --tracker-scroll-thumb-hover: rgba(255, 255, 255, 0.32);
 }
 
+/* --- App header ---------------------------------------------------------- */
+
+/* Single-row top bar per the Claude Design mock: a small green status dot +
+   "Maplet" wordmark on the left, segmented pill tabs on the right. Replaces
+   the old page-title heading + underline tabs (and their full-width divider). */
+.appHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-md);
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.appBrand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appBrandDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mantine-color-sage-5);
+}
+
+/* The brand stays the page's h1 for semantics but renders as a compact
+   wordmark, not a page title. */
+.appBrandName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mantine-color-dark-0);
+}
+
+/* Segmented pill tab control: rounded dark container, active tab = filled
+   green pill with white text, inactive = muted text. */
+.appTabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-7);
+}
+
+.appTab {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mantine-color-dark-2);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.appTab:hover {
+  color: var(--mantine-color-dark-0);
+}
+
+.appTab[data-active] {
+  background: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-white);
+}
+
 /* --- Planner layout ----------------------------------------------------- */
 
 /* Two equal-width columns: Timers + Weekly stacked on the left, Boss on the
@@ -291,15 +358,260 @@ body {
   cursor: not-allowed;
 }
 
+/* --- Star Force calculator ----------------------------------------------- */
+
+/* Two flexible columns that wrap on narrow screens: Inputs (min 330px) and
+   Results (min 520px, twice the grow weight). Stretch keeps the enhancement
+   table absorbing whatever height the inputs column sets. */
+.sfLayout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sfInputs {
+  flex: 1 1 330px;
+  min-width: 0;
+}
+
+.sfResults {
+  flex: 2 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Quick-pick level pills. */
+.sfPill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-dark-4);
+  color: var(--mantine-color-dark-1);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.sfPill:hover {
+  border-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-sage-3);
+}
+
+.sfPill[data-active] {
+  background: var(--mantine-color-sage-light);
+  border-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-sage-light-color);
+}
+
+/* Enhancement mode picker: 2×2 grid of selectable cards. */
+.sfModeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sfModeGrid[data-disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.sfModeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-4);
+  background: var(--mantine-color-dark-7);
+  color: var(--mantine-color-dark-1);
+  text-align: left;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.sfModeCard:hover {
+  border-color: var(--mantine-color-sage-filled);
+}
+
+.sfModeCard[data-active] {
+  background: var(--mantine-color-sage-light);
+  border-color: var(--mantine-color-sage-6);
+  color: var(--mantine-color-sage-light-color);
+}
+
+/* Switches render as a plain track + solid round knob per the design —
+   Mantine's default thumb border reads as a ring in the off state. */
+.sfRow .mantine-Switch-thumb {
+  border: none;
+}
+
+/* A toggle row: label + optional subtitle on the left, switch on the right,
+   inset on the card with a darker fill. Dims when out of range. */
+.sfRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-dark-7);
+}
+
+.sfRow[data-dimmed] {
+  opacity: 0.45;
+}
+
+/* Hero cards. */
+.sfHero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sfHeroCost {
+  flex: 2 1 320px;
+  background: linear-gradient(
+    160deg,
+    var(--mantine-color-sage-9),
+    var(--mantine-color-dark-7)
+  );
+  border: 1px solid var(--mantine-color-sage-8);
+  border-radius: var(--mantine-radius-lg);
+  padding: 20px;
+}
+
+.sfHeroBooms {
+  flex: 1 1 180px;
+  background: linear-gradient(
+    160deg,
+    var(--mantine-color-dark-5),
+    var(--mantine-color-dark-7)
+  );
+  border: 1px solid var(--mantine-color-dark-4);
+  border-radius: var(--mantine-radius-lg);
+  padding: 20px;
+}
+
+.sfHeroValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: clamp(30px, 4.4vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.sfEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Stat strip: three labeled monospace figures. */
+.sfStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-7);
+}
+
+.sfStats > div {
+  flex: 1 1 120px;
+}
+
+/* Enhancement table: fixed-height scroll body with a sticky header. */
+.sfTableCard {
+  flex: 1 1 0;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--mantine-radius-lg);
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-6);
+  overflow: hidden;
+}
+
+.sfTableScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.sfTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sfTable th {
+  position: sticky;
+  top: 0;
+  background: var(--mantine-color-dark-6);
+  color: var(--mantine-color-dark-1);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: right;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--mantine-color-dark-5);
+}
+
+.sfTable th:first-child {
+  text-align: left;
+}
+
+.sfTable td {
+  padding: 10px 12px;
+  text-align: right;
+  font-family: var(--mantine-font-family-monospace);
+  color: var(--mantine-color-dark-1);
+  border-bottom: 1px solid var(--mantine-color-dark-7);
+  white-space: nowrap;
+}
+
+.sfTable td:first-child {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  font-weight: 600;
+  color: var(--mantine-color-dark-0);
+}
+
+.sfTable tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* Page footer: provenance caveat. */
+.sfFooter {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mantine-color-dark-6);
+  font-size: 11px;
+  color: var(--mantine-color-dark-3);
+}
+
 /* --- Reduced motion ------------------------------------------------------ */
 
 /* Honor the OS "reduce motion" setting by dropping our custom transitions.
    Mantine's own component animations are handled by `respectReducedMotion` in
    the theme (main.jsx). */
 @media (prefers-reduced-motion: reduce) {
+  .appTab,
   .charTile,
   .charTileHandle,
-  .charAddTile {
+  .charAddTile,
+  .sfPill,
+  .sfModeCard {
     transition: none;
   }
 }

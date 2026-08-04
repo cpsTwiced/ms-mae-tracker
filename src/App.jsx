@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Container, Title } from '@mantine/core'
+import { Alert, Container, UnstyledButton } from '@mantine/core'
 import {
   lastBossReset,
   lastQuestReset,
@@ -18,10 +18,20 @@ import {
 import { isMonthlyBossTask } from '@/data/bossContent'
 import Tracker from '@/components/Tracker'
 import CharacterBar from '@/components/CharacterBar'
+import StarForcePanel from '@/components/StarForcePanel'
+
+const TABS = [
+  { value: 'planner', label: 'Planner' },
+  { value: 'starforce', label: 'Star Force' },
+]
 
 export default function App() {
   const [state, setState] = useState(loadState)
   const [saveFailed, setSaveFailed] = useState(false)
+  // Which top-level tab is open. Deliberately not persisted — the planner is
+  // the home view. The inactive view is unmounted entirely, which also stops
+  // Timers' 1s tick while the calculator tab is open.
+  const [tab, setTab] = useState('planner')
   // Serialized form of the last state written to (or received from) storage.
   // The persist effect skips the write only when the current state matches it
   // exactly, so a local mutation that races a cross-tab sync is never swallowed
@@ -250,39 +260,62 @@ export default function App() {
 
   return (
     <Container size="lg" py="md">
-      <Title order={1} size="h2">
-        Maplet
-      </Title>
+      <header className="appHeader">
+        <div className="appBrand">
+          <span className="appBrandDot" aria-hidden="true" />
+          <h1 className="appBrandName">Maplet</h1>
+        </div>
+        <div className="appTabs" role="tablist" aria-label="Maplet sections">
+          {TABS.map((t) => (
+            <UnstyledButton
+              key={t.value}
+              role="tab"
+              aria-selected={tab === t.value}
+              className="appTab"
+              data-active={tab === t.value || undefined}
+              onClick={() => setTab(t.value)}
+            >
+              {t.label}
+            </UnstyledButton>
+          ))}
+        </div>
+      </header>
 
       {saveFailed && (
-        <Alert color="red" title="Changes are not being saved" mt="md">
+        <Alert color="red" title="Changes are not being saved" mb="md">
           Browser storage is unavailable or full. Keep this tab open until the
           issue is resolved.
         </Alert>
       )}
 
-      <CharacterBar
-        characters={state.characters}
-        activeId={active.id}
-        onSelect={setActive}
-        onAdd={addCharacter}
-        onUpdate={updateCharacter}
-        onRemove={removeCharacter}
-        onReorder={reorderCharacters}
-      />
+      {tab === 'planner' ? (
+        <>
+          <CharacterBar
+            characters={state.characters}
+            activeId={active.id}
+            onSelect={setActive}
+            onAdd={addCharacter}
+            onUpdate={updateCharacter}
+            onRemove={removeCharacter}
+            onReorder={reorderCharacters}
+          />
 
-      <Tracker
-        character={active}
-        onToggleBoss={toggleBoss}
-        onRemoveBoss={removeBoss}
-        onReorderBoss={reorderBoss}
-        onSetBossDifficulty={setBossDifficulty}
-        onClearBosses={clearBosses}
-        onToggleWeekly={toggleWeekly}
-        onRemoveWeekly={removeWeekly}
-        onReorderWeekly={reorderWeekly}
-        onSetWeeklyContent={setWeeklyContent}
-      />
+          <Tracker
+            character={active}
+            onToggleBoss={toggleBoss}
+            onRemoveBoss={removeBoss}
+            onReorderBoss={reorderBoss}
+            onSetBossDifficulty={setBossDifficulty}
+            onClearBosses={clearBosses}
+            onToggleWeekly={toggleWeekly}
+            onRemoveWeekly={removeWeekly}
+            onReorderWeekly={reorderWeekly}
+            onSetWeeklyContent={setWeeklyContent}
+          />
+        </>
+      ) : (
+        <StarForcePanel />
+      )}
     </Container>
   )
 }

@@ -156,7 +156,17 @@ export const MVP_DISCOUNTS = { none: 0, silver: 0.03, gold: 0.05, diamond: 0.1 }
 export const MVP_MAX_STAR = 16
 
 // "5/10/15★ guaranteed success" event: attempts at these stars always land.
+// Retired from the current GMS event lineup — engine support only, no UI
+// toggle.
 export const GUARANTEED_STARS = [5, 10, 15]
+
+// Shining Star Force's 30% destruction reduction applies below 21★ only
+// (attempts at 20★ and under — 21★→22★ is excluded).
+export const BOOM_EVENT_MAX_STAR = 20
+
+// 1+1 Star Force event: attempts at 10★ and under grant 2 stars per success,
+// which naturally caps the boost at 12★.
+export const PLUS_ONE_MAX_STAR = 10
 
 // Star Catch minigame: success ×1.05, the gain drawn proportionally from the
 // remaining maintain/boom mass.
