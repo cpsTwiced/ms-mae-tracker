@@ -1,0 +1,9 @@
+# Build output and machine-generated sync state
+dist/
+coverage/
+ds-bundle/
+.ds-sync/
+
+# Design-sync inputs keep the sync tooling's own formatting — reformatting
+# them churns the design-sync source hashes and forces re-grading.
+.design-sync/
