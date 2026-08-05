@@ -79,6 +79,41 @@ describe('StarForcePanel', () => {
     expect(screen.getByLabelText('Current star').value).toBe('17')
   })
 
+  it('snaps overshooting inputs to their real maximums', () => {
+    renderPanel()
+    // Level clamps to 300 instead of dropping digits.
+    fill('Item level', '999999999')
+    expect(screen.getByLabelText('Item level').value).toBe('300')
+    // Stars clamp to the level-based cap, not a universal 30.
+    fill('Item level', '100')
+    fill('Target star', '26')
+    expect(screen.getByLabelText('Target star').value).toBe('8')
+    fill('Item level', '200')
+    fill('Target star', '99')
+    expect(screen.getByLabelText('Target star').value).toBe('30')
+  })
+
+  it('snaps stars down when a committed level lowers the cap', () => {
+    renderPanel()
+    // Defaults are 200 / 0→22; dropping the level to 100 (cap 8★) and
+    // leaving the field must pull the 22★ target down to the cap.
+    fill('Item level', '100')
+    fireEvent.blur(screen.getByLabelText('Item level'))
+    expect(screen.getByLabelText('Target star').value).toBe('8')
+  })
+
+  it('hides the simulation stats for ranges too long to simulate', () => {
+    renderPanel()
+    fill('Current star', '0')
+    fill('Target star', '30')
+    expect(screen.getByText(/simulation skipped/)).toBeInTheDocument()
+    // The closed-form expectations still render.
+    const run = expectedRun(200, 0, 30, { starCatch: true, mode: 1 })
+    expect(
+      screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
+    ).toBeInTheDocument()
+  })
+
   it('safeguard changes the expected cost', () => {
     renderPanel()
     fill('Item level', '200')

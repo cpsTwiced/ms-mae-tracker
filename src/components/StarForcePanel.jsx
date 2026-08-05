@@ -15,6 +15,7 @@ import {
   mulberry32,
   maxStarForLevel,
   MAX_STAR,
+  SIM_MAX_EXPECTED_ATTEMPTS,
 } from '@/lib/starforce'
 import { formatMeso } from '@/lib/format'
 import ScrollStatusArea from './ScrollStatusArea'
@@ -69,6 +70,14 @@ function digits(value) {
   return value.replace(/\D/g, '')
 }
 
+// Overshooting a field snaps to its max (typing "999" in Level lands on 300,
+// a 26★ target on a Lv.100 item lands on its 8★ cap) instead of silently
+// dropping digits or accepting values the game can't reach.
+function clampRaw(raw, max) {
+  if (raw === '') return ''
+  return String(Math.min(Number(raw), max))
+}
+
 function SettingRow({ label, sub, dimmed, control }) {
   return (
     <div className="sfRow" data-dimmed={dimmed || undefined}>
@@ -120,6 +129,18 @@ export default function StarForcePanel() {
     levelValid && cur !== null && target !== null && target > cur
   const starCap = levelValid ? maxStarForLevel(level) : MAX_STAR
 
+  // Committing a level (blur or a preset pill) snaps out-of-cap star fields
+  // down to the new cap. Deliberately not done per keystroke: half-typed
+  // levels ("1" on the way to "150") would wrongly crush the stars.
+  function applyLevel(raw) {
+    setLevelRaw(raw)
+    const lvl = raw === '' ? null : Number(raw)
+    if (lvl === null || lvl < 5 || lvl > 300) return
+    const cap = maxStarForLevel(lvl)
+    setCurRaw((c) => clampRaw(c, cap))
+    setTargetRaw((t) => clampRaw(t, cap))
+  }
+
   const opts = useMemo(
     () => ({
       starCatch,
@@ -138,15 +159,23 @@ export default function StarForcePanel() {
     [rangeValid, level, cur, target, opts],
   )
 
+  // Extreme climbs (toward 29-30★) average millions of attempts per run —
+  // simulating them would either hang the tab or, clipped, report a false
+  // median. The closed-form expectations stay exact, so only the sim skips.
+  const simGated =
+    run !== null &&
+    run.perStar.length > 0 &&
+    run.attempts > SIM_MAX_EXPECTED_ATTEMPTS
+
   const sim = useMemo(
     () =>
-      rangeValid
+      rangeValid && !simGated
         ? simulateRuns(level, cur, target, opts, {
             runs: Number(runs),
             rng: mulberry32(SIM_SEED),
           })
         : null,
-    [rangeValid, level, cur, target, opts, runs],
+    [rangeValid, simGated, level, cur, target, opts, runs],
   )
 
   const hasResult = run !== null && run.perStar.length > 0
@@ -205,7 +234,10 @@ export default function StarForcePanel() {
                 <TextInput
                   aria-label="Item level"
                   value={levelRaw}
-                  onChange={(e) => setLevelRaw(digits(e.currentTarget.value))}
+                  onChange={(e) =>
+                    setLevelRaw(clampRaw(digits(e.currentTarget.value), 300))
+                  }
+                  onBlur={() => applyLevel(levelRaw)}
                   w={80}
                   size="sm"
                   inputMode="numeric"
@@ -225,7 +257,7 @@ export default function StarForcePanel() {
                       key={preset}
                       className="sfPill"
                       data-active={level === preset || undefined}
-                      onClick={() => setLevelRaw(String(preset))}
+                      onClick={() => applyLevel(String(preset))}
                     >
                       {preset}
                     </UnstyledButton>
@@ -244,7 +276,9 @@ export default function StarForcePanel() {
                     aria-label="Current star"
                     value={curRaw}
                     onChange={(e) =>
-                      setCurRaw(digits(e.currentTarget.value).slice(0, 2))
+                      setCurRaw(
+                        clampRaw(digits(e.currentTarget.value), starCap),
+                      )
                     }
                     w={92}
                     size="sm"
@@ -276,7 +310,9 @@ export default function StarForcePanel() {
                     aria-label="Target star"
                     value={targetRaw}
                     onChange={(e) =>
-                      setTargetRaw(digits(e.currentTarget.value).slice(0, 2))
+                      setTargetRaw(
+                        clampRaw(digits(e.currentTarget.value), starCap),
+                      )
                     }
                     w={92}
                     size="sm"
@@ -518,6 +554,14 @@ export default function StarForcePanel() {
                 {sim ? formatMeso(sim.p90) : '—'}
               </Text>
             </div>
+            {simGated && (
+              <Text size="xs" c="dimmed" style={{ flexBasis: '100%' }}>
+                simulation skipped — this climb averages{' '}
+                {Math.round(run.attempts).toLocaleString('en-US')} attempts per
+                run, far too many to replay; the expected values are exact math,
+                but a typical run will spend much less than the average
+              </Text>
+            )}
           </div>
 
           <div className="sfTableCard">

@@ -7,6 +7,7 @@ import {
   simulateRuns,
   mulberry32,
   maxStarForLevel,
+  SIM_MAX_EXPECTED_ATTEMPTS,
 } from './starforce'
 
 describe('maxStarForLevel', () => {
@@ -272,5 +273,18 @@ describe('simulateRuns', () => {
 
   it('returns null when there is nothing to simulate', () => {
     expect(simulateRuns(200, 22, 22)).toBeNull()
+  })
+
+  it('refuses ranges too long to simulate honestly', () => {
+    // 0→30 averages ~15M attempts per run; a clipped simulation would report
+    // a false median ≈ p90, so the gate returns null instead.
+    expect(
+      expectedRun(200, 0, 30, { starCatch: true }).attempts,
+    ).toBeGreaterThan(SIM_MAX_EXPECTED_ATTEMPTS)
+    expect(simulateRuns(200, 0, 30, { starCatch: true })).toBeNull()
+    // Everyday ranges stay well inside the gate.
+    expect(
+      simulateRuns(200, 17, 22, { starCatch: true }, { runs: 200 }),
+    ).not.toBeNull()
   })
 })
