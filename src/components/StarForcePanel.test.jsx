@@ -20,8 +20,21 @@ function fill(label, value) {
 }
 
 describe('StarForcePanel', () => {
-  it('starts empty with a prompt instead of results', () => {
+  it('prices a Lv.200 0★ → 22★ run by default', () => {
     renderPanel()
+    expect(screen.getByLabelText('Item level').value).toBe('200')
+    expect(screen.getByLabelText('Current star').value).toBe('0')
+    expect(screen.getByLabelText('Target star').value).toBe('22')
+
+    const run = expectedRun(200, 0, 22, { starCatch: true, mode: 1 })
+    expect(
+      screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
+    ).toBeInTheDocument()
+  })
+
+  it('shows a prompt instead of results when the level is cleared', () => {
+    renderPanel()
+    fill('Item level', '')
     expect(
       screen.getAllByText('Enter an item level to price the run.').length,
     ).toBeGreaterThan(0)

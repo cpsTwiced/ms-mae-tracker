@@ -15,7 +15,10 @@ export const theme = createTheme({
   // Honor the OS "reduce motion" setting for Mantine's own animations
   // (modals, tooltips, transitions). Custom CSS motion is handled in index.css.
   respectReducedMotion: true,
-  defaultRadius: 'lg',
+  // Switches/checkboxes show a pointer cursor like the rest of the controls.
+  cursorType: 'pointer',
+  // One radius everywhere — the planner panes set the app-wide look.
+  defaultRadius: 'md',
   colors: {
     // Sage-teal accent — soft but bright enough to read clearly on the dark UI.
     sage: [

@@ -26,6 +26,12 @@ describe('formatMeso', () => {
     expect(formatMeso(1488678350)).toBe('1.5b')
   })
 
+  it('rounds unit boundaries up into the next unit', () => {
+    expect(formatMeso(999.6e9)).toBe('1.0t')
+    expect(formatMeso(999.4e9)).toBe('999b')
+    expect(formatMeso(99.97e6)).toBe('100m')
+  })
+
   it('treats non-positive amounts as zero', () => {
     expect(formatMeso(-5)).toBe('0')
   })

@@ -10,9 +10,12 @@ export function formatMeso(n) {
     [1e3, 'k'],
   ]
   for (const [div, suffix] of units) {
-    if (n >= div) {
-      const v = n / div
-      return `${v.toFixed(v >= 100 ? 0 : 1)}${suffix}`
+    const v = n / div
+    // Pick a unit as soon as the DISPLAYED value reaches 1.0, so amounts
+    // that round up never show as "1000b" instead of "1.0t" (and 99.97m
+    // shows as "100m", not "100.0m").
+    if (v >= 0.9995) {
+      return `${v.toFixed(v >= 99.95 ? 0 : 1)}${suffix}`
     }
   }
   return `${Math.round(n)}`

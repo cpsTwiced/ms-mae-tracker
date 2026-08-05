@@ -54,7 +54,8 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Star Force' }))
     expect(screen.getByText('Enhancement table')).toBeInTheDocument()
-    // keepMounted={false}: the planner unmounts while the calculator is open.
+    // The inactive view is unmounted entirely (conditional render), which
+    // also stops the planner's timers while the calculator is open.
     expect(screen.queryByText('Boss Content')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Planner' }))

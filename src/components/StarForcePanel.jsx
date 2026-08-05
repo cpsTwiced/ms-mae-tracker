@@ -17,6 +17,7 @@ import {
   MAX_STAR,
 } from '@/lib/starforce'
 import { formatMeso } from '@/lib/format'
+import ScrollStatusArea from './ScrollStatusArea'
 
 const LEVEL_PRESETS = [150, 160, 200, 250]
 
@@ -24,10 +25,28 @@ const LEVEL_PRESETS = [150, 160, 200, 250]
 // ×3-6.5 depending on the star, and levels 2-4 also lower success on 18★+.
 const MODES = [
   { value: 1, title: 'Level 1', desc: 'Standard rates & cost' },
-  { value: 2, title: 'Level 2', desc: '≈⅓ fewer booms · 1.5–2× cost' },
-  { value: 3, title: 'Level 3', desc: '≈⅔ fewer booms · 2.5–3.5× cost' },
+  { value: 2, title: 'Level 2', desc: '≈33% fewer booms · 1.5–2× cost' },
+  { value: 3, title: 'Level 3', desc: '≈67% fewer booms · 2.5–3.5× cost' },
   { value: 4, title: 'Level 4', desc: 'No booms · 3–6.5× cost' },
 ]
+
+// Plain down-arrow chevron for the dropdowns (Mantine's default indicator
+// doesn't match the design).
+const SELECT_CHEVRON = (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ color: 'var(--mantine-color-dark-2)' }}
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+)
 
 const MVP_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -50,21 +69,15 @@ function digits(value) {
   return value.replace(/\D/g, '')
 }
 
-function SettingRow({ label, sub, note, dimmed, control }) {
+function SettingRow({ label, sub, dimmed, control }) {
   return (
     <div className="sfRow" data-dimmed={dimmed || undefined}>
       <div>
         <Text size="sm" fw={600}>
           {label}
-          {note && (
-            <Text component="span" size="sm" fw={500} c="dark.2">
-              {' '}
-              · {note}
-            </Text>
-          )}
         </Text>
         {sub && (
-          <Text size="xs" c="dimmed">
+          <Text size="sm" c="dimmed">
             {sub}
           </Text>
         )}
@@ -79,17 +92,18 @@ function pct(p) {
 }
 
 export default function StarForcePanel() {
-  // Inputs deliberately start empty (results show a prompt until the range is
-  // valid). Everything below is plain local state — nothing persists.
-  const [levelRaw, setLevelRaw] = useState('')
-  const [curRaw, setCurRaw] = useState('')
-  const [targetRaw, setTargetRaw] = useState('')
+  // Defaults price a Lv.200 item over the full 0★ → 22★ climb so results
+  // show immediately. Everything below is plain local state — nothing
+  // persists.
+  const [levelRaw, setLevelRaw] = useState('200')
+  const [curRaw, setCurRaw] = useState('0')
+  const [targetRaw, setTargetRaw] = useState('22')
   const [starCatch, setStarCatch] = useState(true)
   const [safeguard, setSafeguard] = useState(false)
   const [mode, setMode] = useState(1)
   const [mvp, setMvp] = useState('none')
   // Only the two events GMS currently runs (re-verified Aug 2026): Shining
-  // Star Force = 30% off cost + 30% reduced destruction on ≤20★ attempts,
+  // Star Force = 30% off cost + 30% reduced destruction on ≤21★ attempts,
   // and 1+1 Star Force = +1 extra star per success on ≤10★ attempts. They
   // run independently and stack. The engine still supports the retired
   // 5/10/15★-guarantee flag, but it gets no toggle here.
@@ -137,12 +151,13 @@ export default function StarForcePanel() {
 
   const hasResult = run !== null && run.perStar.length > 0
 
-  // Dim rules from the design: each control fades when the requested range
-  // can't touch it. Null stars count as "in range" so nothing looks disabled
-  // while the form is still empty.
-  const safeguardDimmed =
-    rangeValid && (target <= 15 || cur > 17) ? true : false
-  const modeDimmed = rangeValid && (target <= 15 || cur > 21) ? true : false
+  // Dim Safeguard/mode only when no attempt can ever reach them. Booms knock
+  // runs back to 12-20★ checkpoints, so even a range that starts above the
+  // 15-17★ (Safeguard) / 15-21★ (mode) windows re-climbs through them —
+  // any target past 15★ keeps both relevant. Null stars count as "in range"
+  // so nothing looks disabled while the form is still empty.
+  const safeguardDimmed = rangeValid && target <= 15
+  const modeDimmed = rangeValid && target <= 15
   // With safeguard on and no step past 18★, every mode-eligible attempt is
   // safeguarded, so the mode has nothing left to affect.
   const modeCovered = rangeValid && safeguard && target <= 18 && cur < 18
@@ -158,43 +173,32 @@ export default function StarForcePanel() {
       ? 'no spares needed'
       : `bring ${Math.ceil(booms)} spare${Math.ceil(booms) === 1 ? '' : 's'}`
 
+  // The cap case matters: a valid-looking range (say 20 → 25 on a Lv.130
+  // item) silently clamps to the cap and produces no rows, and "pick a higher
+  // target" would be misleading advice there.
   const emptyMessage = !levelValid
     ? 'Enter an item level to price the run.'
-    : 'Pick a target above your current star.'
+    : cur !== null && cur >= starCap
+      ? `a Lv.${level} item is already at its ${starCap} ★ cap`
+      : 'Pick a target above your current star.'
 
   return (
     <div>
-      <h1
-        style={{
-          margin: 0,
-          fontSize: 24,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: 'var(--mantine-color-dark-0)',
-        }}
-      >
-        Star Force
-      </h1>
-      <Text size="sm" c="dimmed" mb="md">
-        What it should cost to take one item from where it is to where you want
-        it.
-      </Text>
-
       <div className="sfLayout">
         <Card
           withBorder
-          radius="lg"
+          radius="md"
           padding={18}
           className="sfInputs"
           bg="dark.6"
         >
           <Stack gap={14}>
-            <Text size="sm" fw={600}>
+            <Text size="md" fw={600}>
               Inputs
             </Text>
 
             <div>
-              <Text size="xs" fw={600} mb={7}>
+              <Text size="sm" fw={600} mb={7}>
                 Item level
               </Text>
               <Stack gap={8}>
@@ -204,9 +208,7 @@ export default function StarForcePanel() {
                   onChange={(e) => setLevelRaw(digits(e.currentTarget.value))}
                   w={80}
                   size="sm"
-                  radius="sm"
                   inputMode="numeric"
-                  placeholder="—"
                   styles={{
                     input: {
                       height: 40,
@@ -235,7 +237,7 @@ export default function StarForcePanel() {
             <div>
               <Group gap={10} align="flex-end" wrap="nowrap">
                 <div>
-                  <Text size="xs" fw={600} mb={7}>
+                  <Text size="sm" fw={600} mb={7}>
                     Current star
                   </Text>
                   <TextInput
@@ -246,9 +248,7 @@ export default function StarForcePanel() {
                     }
                     w={92}
                     size="sm"
-                    radius="sm"
                     inputMode="numeric"
-                    placeholder="—"
                     rightSection={
                       <Text size="xs" c="dark.3">
                         ★
@@ -269,7 +269,7 @@ export default function StarForcePanel() {
                   →
                 </Text>
                 <div>
-                  <Text size="xs" fw={600} mb={7}>
+                  <Text size="sm" fw={600} mb={7}>
                     Target star
                   </Text>
                   <TextInput
@@ -280,9 +280,7 @@ export default function StarForcePanel() {
                     }
                     w={92}
                     size="sm"
-                    radius="sm"
                     inputMode="numeric"
-                    placeholder="—"
                     rightSection={
                       <Text size="xs" c="sage.7">
                         ★
@@ -336,8 +334,8 @@ export default function StarForcePanel() {
             />
 
             <div>
-              <Group justify="space-between" mb={4}>
-                <Text size="xs" fw={600}>
+              <Group gap={6} align="baseline" mb={4}>
+                <Text size="sm" fw={600}>
                   Enhancement mode
                 </Text>
                 <Text size="xs" c="dimmed">
@@ -364,13 +362,10 @@ export default function StarForcePanel() {
                   </UnstyledButton>
                 ))}
               </div>
-              <Text size="xs" c="dimmed" mt={4}>
-                levels 2–4 also lower success on 18–21 ★
-              </Text>
             </div>
 
             <div>
-              <Text size="xs" fw={600} mb={4}>
+              <Text size="sm" fw={600} mb={4}>
                 MVP tier
               </Text>
               <Select
@@ -378,14 +373,17 @@ export default function StarForcePanel() {
                 data={MVP_OPTIONS}
                 value={mvp}
                 onChange={(v) => setMvp(v ?? 'none')}
-                size="xs"
+                size="sm"
+                rightSection={SELECT_CHEVRON}
+                rightSectionPointerEvents="none"
+                styles={{ input: { height: 40 } }}
                 allowDeselect={false}
               />
             </div>
 
             <div>
               <Group gap={6} align="baseline" mb={7}>
-                <Text size="xs" fw={600}>
+                <Text size="sm" fw={600}>
                   Simulation runs
                 </Text>
                 <Text size="xs" c="dark.3">
@@ -398,23 +396,26 @@ export default function StarForcePanel() {
                 value={runs}
                 onChange={(v) => setRuns(v ?? '3000')}
                 size="sm"
+                rightSection={SELECT_CHEVRON}
+                rightSectionPointerEvents="none"
+                styles={{ input: { height: 40 } }}
                 allowDeselect={false}
               />
             </div>
 
             <div>
               <Group gap={6} align="baseline" mb={7}>
-                <Text size="xs" fw={600}>
+                <Text size="sm" fw={600}>
                   Events
                 </Text>
                 <Text size="xs" c="dark.3">
-                  current GMS rotations
+                  select all that apply
                 </Text>
               </Group>
               <Stack gap={8}>
                 <SettingRow
                   label="Shining Star Force"
-                  sub="30% off cost + 30% fewer booms under 21 ★"
+                  sub="30% off cost + 30% fewer booms up to 22 ★"
                   control={
                     <Switch
                       aria-label="Shining Star Force"
@@ -487,7 +488,7 @@ export default function StarForcePanel() {
 
           <div className="sfStats">
             <div>
-              <Text size="xs" c="dark.2">
+              <Text size="sm" c="dark.2">
                 Expected attempts
               </Text>
               <Group gap={4} align="baseline">
@@ -502,7 +503,7 @@ export default function StarForcePanel() {
               </Group>
             </div>
             <div>
-              <Text size="xs" c="dark.2">
+              <Text size="sm" c="dark.2">
                 Median run
               </Text>
               <Text size="md" fw={600} ff="monospace">
@@ -510,7 +511,7 @@ export default function StarForcePanel() {
               </Text>
             </div>
             <div>
-              <Text size="xs" c="dark.2">
+              <Text size="sm" c="dark.2">
                 Unlucky run (top 10%)
               </Text>
               <Text size="md" fw={600} ff="monospace" c="orange.3">
@@ -520,10 +521,14 @@ export default function StarForcePanel() {
           </div>
 
           <div className="sfTableCard">
-            <Text size="sm" fw={600} px={12} pt={14} pb={10}>
+            <Text size="md" fw={600} px={16} pt={14} pb={10}>
               Enhancement table
             </Text>
-            <div className="sfTableScroll">
+            <ScrollStatusArea
+              className="sfTableScroll"
+              refreshKey={run}
+              scrollbars="xy"
+            >
               {hasResult ? (
                 <table className="sfTable">
                   <thead>
@@ -566,11 +571,11 @@ export default function StarForcePanel() {
                   </tbody>
                 </table>
               ) : (
-                <Text size="sm" c="dimmed" px={12} pb={14}>
+                <Text size="sm" c="dimmed" px={16} pb={14}>
                   {emptyMessage}
                 </Text>
               )}
-            </div>
+            </ScrollStatusArea>
           </div>
         </div>
       </div>

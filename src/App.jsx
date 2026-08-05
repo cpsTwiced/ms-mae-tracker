@@ -262,7 +262,7 @@ export default function App() {
     <Container size="lg" py="md">
       <header className="appHeader">
         <div className="appBrand">
-          <span className="appBrandDot" aria-hidden="true" />
+          <img src="/bosses/pinkbean.png" alt="" className="appBrandIcon" />
           <h1 className="appBrandName">Maplet</h1>
         </div>
         <div className="appTabs" role="tablist" aria-label="Maplet sections">
@@ -287,6 +287,10 @@ export default function App() {
           issue is resolved.
         </Alert>
       )}
+
+      <h2 className="pageTitle">
+        {tab === 'planner' ? 'Planner' : 'Star Force Calculator'}
+      </h2>
 
       {tab === 'planner' ? (
         <>
