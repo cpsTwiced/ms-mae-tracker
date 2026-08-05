@@ -12,6 +12,7 @@ A personal **Global MapleStory (GMS) weekly tracker**, modeled on the in-game _M
 - **Drag-to-reorder** — boss entries can be sorted with the panel's Reorder toggle, and character tiles reorder through the drag handle that appears on hover. Weekly content stays in catalog order within each section.
 - **Auto-reset** — checked items automatically uncheck when their reset passes. Weekly bosses and weekly content clear on the Thursday reset; the monthly boss (Black Mage) clears on the 1st of the month, independently.
 - **Saved in your browser** — everything persists in localStorage, stays synchronized across open tabs, and shows a warning if the browser cannot save a change.
+- **Star Force calculator** — a second top-level tab (**Planner | Star Force**) that prices taking one item from its current star to a target. Enter the item level (with 150/160/200/250 quick pills) and a current → target star range, then toggle **Star Catch**, **Safeguard** (15–17★, +200% cost, no booms), the v.269 **Enhancement Modes 1–4** (higher modes boom less but cost more; modes 2–4 also lower success on 18–21★), an **MVP tier** discount, and the two current GMS events — **Shining Star Force** (30% off cost + 30% fewer booms up to 22★) and **1+1 Star Force** (+1★ per success under 11★, caps at 12★), independently toggleable and stackable. Results show the exact expected cost and boom count (closed-form math over the official v.269 rates, including boom-checkpoint re-climbs), expected attempts, a seeded-simulation **median** and **unlucky (top 10%)** run, and a per-star enhancement table (success/boom odds, cost per attempt, expected cost and booms per step). Inputs default to a Lv.200 item going 0★ → 22★ and nothing is persisted. Rates and costs follow the GMS v.264+ 30★ tables (Enhancement Mode arrived in v.269); the per-mode tables and boom checkpoints are community-sourced.
 
 ## Reset Schedule
 
@@ -59,6 +60,7 @@ npm run dev      # start the dev server at http://localhost:5173
 - **State** lives in `App.jsx` and is persisted to localStorage (`lib/storage.js`). There is no server or account — data is scoped to one browser.
 - **Reset logic** is in `lib/weeklyReset.js` (all UTC). The app stores the last weekly-boss, weekly-quest, and monthly-boss reset it applied; when a boundary passes, the matching items are unchecked (weekly bosses and monthly Black Mage are unchecked independently).
 - **Content catalogs** (`data/bossContent.js`, `data/weeklyContent.js`, `data/jobs.js`, `data/servers.js`) are static data that drive the pickers and dropdowns.
+- **Star Force math** is in `lib/starforce.js` (pure functions: per-attempt odds/costs, an exact closed-form expected-cost solver, and a seeded Monte Carlo for the median/unlucky stats), driven by the v.269 rate/cost/mode tables in `data/starforce.js` (with source notes). The calculator UI (`components/StarForcePanel.jsx`) keeps its inputs in local component state only.
 
 ### Project structure
 
@@ -70,7 +72,7 @@ Boss portraits are **self-hosted** in `public/bosses/`. Most were sourced once f
 
 ## Status / scope
 
-MVP focused on **Boss Content** and **Weekly Content**, single-browser. Not yet implemented: cross-device sync, daily-content panel, per-class portraits.
+MVP focused on **Boss Content**, **Weekly Content**, and the **Star Force calculator**, single-browser. Not yet implemented: cross-device sync, daily-content panel, per-class portraits, saved calculator setups.
 
 ## License
 

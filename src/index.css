@@ -10,6 +10,81 @@ body {
   --tracker-scroll-thumb-hover: rgba(255, 255, 255, 0.32);
 }
 
+/* --- App header ---------------------------------------------------------- */
+
+/* Single-row top bar: the Pink Bean favicon + a large "Maplet" title on the
+   left with the segmented pill tabs right beside them, underlined by a
+   full-width rule. */
+.appHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-md);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--mantine-color-dark-5);
+}
+
+.appBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Same Pink Bean image the browser tab uses. */
+.appBrandIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.appBrandName {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mantine-color-dark-0);
+}
+
+/* Per-page title under the header rule. */
+.pageTitle {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--mantine-color-dark-0);
+}
+
+/* Segmented pill tab control: rounded dark container, active tab = filled
+   green pill with white text, inactive = muted text. */
+.appTabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-7);
+}
+
+.appTab {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mantine-color-dark-2);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.appTab:hover {
+  color: var(--mantine-color-dark-0);
+}
+
+.appTab[data-active] {
+  background: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-white);
+}
+
 /* --- Planner layout ----------------------------------------------------- */
 
 /* Two equal-width columns: Timers + Weekly stacked on the left, Boss on the
@@ -83,6 +158,12 @@ body {
 
 .scrollStatusViewport[data-scroll-required] {
   padding-inline-end: calc(
+    var(--scrollarea-scrollbar-size) + var(--tracker-scroll-gap)
+  ) !important;
+}
+
+.scrollStatusViewport[data-scroll-required-x] {
+  padding-block-end: calc(
     var(--scrollarea-scrollbar-size) + var(--tracker-scroll-gap)
   ) !important;
 }
@@ -291,15 +372,293 @@ body {
   cursor: not-allowed;
 }
 
+/* --- Star Force calculator ----------------------------------------------- */
+
+/* Stacked on narrow screens; two columns from the app's 62em desktop
+   breakpoint (Inputs min 330px, Results at twice the grow weight). Stretch
+   keeps the enhancement table absorbing whatever height the inputs column
+   sets on desktop. */
+.sfLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sfInputs {
+  min-width: 0;
+}
+
+.sfResults {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 62em) {
+  .sfLayout {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .sfInputs {
+    flex: 1 1 330px;
+  }
+
+  .sfResults {
+    flex: 2 1 520px;
+  }
+}
+
+/* Quick-pick level pills. */
+.sfPill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-dark-4);
+  color: var(--mantine-color-dark-1);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.sfPill:hover {
+  border-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-sage-3);
+}
+
+.sfPill[data-active] {
+  background: var(--mantine-color-sage-light);
+  border-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-sage-light-color);
+}
+
+/* Enhancement mode picker: 2×2 grid of selectable cards. */
+.sfModeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sfModeGrid[data-disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.sfModeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-4);
+  background: var(--mantine-color-dark-7);
+  color: var(--mantine-color-dark-1);
+  text-align: left;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.sfModeCard:hover {
+  border-color: var(--mantine-color-sage-filled);
+}
+
+.sfModeCard[data-active] {
+  background: var(--mantine-color-sage-light);
+  border-color: var(--mantine-color-sage-6);
+  color: var(--mantine-color-sage-light-color);
+}
+
+/* Switches render as a plain track + solid round knob per the design —
+   Mantine's default thumb border reads as a ring in the off state. */
+.sfRow .mantine-Switch-thumb {
+  border: none;
+}
+
+/* A toggle row: label + optional subtitle on the left, switch on the right,
+   inset on the card with a darker fill. Dims when out of range. */
+.sfRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-dark-7);
+}
+
+.sfRow[data-dimmed] {
+  opacity: 0.45;
+}
+
+/* Hero cards. */
+.sfHero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sfHeroCost {
+  flex: 2 1 320px;
+  background: linear-gradient(
+    160deg,
+    var(--mantine-color-sage-9),
+    var(--mantine-color-dark-7)
+  );
+  border: 1px solid var(--mantine-color-sage-8);
+  border-radius: var(--mantine-radius-md);
+  padding: 20px;
+}
+
+.sfHeroBooms {
+  flex: 1 1 180px;
+  background: linear-gradient(
+    160deg,
+    var(--mantine-color-dark-5),
+    var(--mantine-color-dark-7)
+  );
+  border: 1px solid var(--mantine-color-dark-4);
+  border-radius: var(--mantine-radius-md);
+  padding: 20px;
+}
+
+.sfHeroValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: clamp(30px, 4.4vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.sfEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Stat strip: three labeled monospace figures. */
+.sfStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-7);
+}
+
+.sfStats > div {
+  flex: 1 1 120px;
+}
+
+/* Enhancement table: sticky-header scroll body via ScrollStatusArea, sharing
+   the planner panes' scrollbar styling and reserving gutters for the bars
+   (data-scroll-required / -x) instead of overlaying the last column or row.
+   On narrow screens the card grows with its rows (capped so it can't swallow
+   the page) and the body scrolls sideways when the columns can't fit; on
+   desktop it's the flex pane that fills the results column. */
+.sfTableCard {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-6);
+  overflow: hidden;
+}
+
+.sfTableScroll {
+  flex: 1;
+  min-height: 0;
+}
+
+/* The narrow-screen height cap sits on the viewport — the real scroll
+   container — because the ScrollArea root only carrying a max-height can't
+   size its percentage-height viewport (the cap would silently not clip). */
+.sfTableScroll .scrollStatusViewport {
+  max-height: 70vh;
+}
+
+@media (min-width: 62em) {
+  .sfTableCard {
+    flex: 1 1 0;
+    min-height: 220px;
+  }
+
+  .sfTableScroll .scrollStatusViewport {
+    max-height: none;
+  }
+}
+
+.sfTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.sfTable th {
+  position: sticky;
+  top: 0;
+  background: var(--mantine-color-dark-6);
+  color: var(--mantine-color-dark-1);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: right;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--mantine-color-dark-5);
+}
+
+.sfTable th:first-child {
+  text-align: left;
+}
+
+.sfTable td {
+  padding: 10px 16px;
+  text-align: right;
+  font-family: var(--mantine-font-family-monospace);
+  color: var(--mantine-color-dark-1);
+  border-bottom: 1px solid var(--mantine-color-dark-7);
+  white-space: nowrap;
+}
+
+.sfTable td:first-child {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  font-weight: 600;
+  color: var(--mantine-color-dark-0);
+}
+
+.sfTable tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* Page footer: provenance caveat. */
+.sfFooter {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mantine-color-dark-6);
+  font-size: 11px;
+  color: var(--mantine-color-dark-3);
+}
+
 /* --- Reduced motion ------------------------------------------------------ */
 
 /* Honor the OS "reduce motion" setting by dropping our custom transitions.
    Mantine's own component animations are handled by `respectReducedMotion` in
    the theme (main.jsx). */
 @media (prefers-reduced-motion: reduce) {
+  .appTab,
   .charTile,
   .charTileHandle,
-  .charAddTile {
+  .charAddTile,
+  .sfPill,
+  .sfModeCard {
     transition: none;
   }
 }

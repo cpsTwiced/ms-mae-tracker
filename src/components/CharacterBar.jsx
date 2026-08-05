@@ -361,7 +361,7 @@ export default function CharacterBar({
 
   return (
     <>
-      <Card withBorder radius="md" padding="md" pb="sm" mt="md">
+      <Card withBorder radius="md" padding="md" pb="sm">
         <Stack gap="sm">
           {/* Pane title, matching Boss Content / Timers. */}
           <Text fw={600}>Characters</Text>

@@ -47,6 +47,21 @@ describe('App', () => {
     expect(screen.getByText(/No boss content yet/i)).toBeInTheDocument()
   })
 
+  it('switches between the Planner and Star Force tabs', () => {
+    renderApp()
+    // Planner is the default: the calculator is not mounted.
+    expect(screen.queryByText('Enhancement table')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Star Force' }))
+    expect(screen.getByText('Enhancement table')).toBeInTheDocument()
+    // The inactive view is unmounted entirely (conditional render), which
+    // also stops the planner's timers while the calculator is open.
+    expect(screen.queryByText('Boss Content')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Planner' }))
+    expect(screen.getByText('Boss Content')).toBeInTheDocument()
+  })
+
   it('adds a character and persists it', async () => {
     const first = renderApp()
 
