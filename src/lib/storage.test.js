@@ -185,6 +185,18 @@ describe('makeCharacter', () => {
       weeklyTasks: [],
     })
   })
+
+  it('caps names at the 12-character GMS limit', () => {
+    expect(makeCharacter({ name: 'x'.repeat(40) }).name).toHaveLength(12)
+    // Stored data from before the cap is truncated on load, too.
+    const state = deserializeState(
+      JSON.stringify({
+        characters: [{ id: 'c1', name: 'y'.repeat(86), level: 200 }],
+        activeId: 'c1',
+      }),
+    )
+    expect(state.characters[0].name).toBe('y'.repeat(12))
+  })
 })
 
 describe('makeBossTask', () => {

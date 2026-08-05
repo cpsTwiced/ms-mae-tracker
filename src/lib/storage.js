@@ -9,6 +9,10 @@ export const STORAGE_KEY = 'maple-tracker-v1'
 // Hard cap on the roster size (main + mules).
 export const MAX_CHARACTERS = 6
 
+// GMS in-game names run 4-12 characters, so 12 is the cap everywhere a name
+// enters the app (create, edit, and stored data loaded from older versions).
+export const MAX_NAME_LENGTH = 12
+
 // Portraits are owned by the catalog, not user data, so tracked entries are
 // re-linked by bossId on load. This keeps saved tasks in sync with catalog art.
 const BOSS_BY_ID = new Map(BOSS_CONTENT.map((boss) => [boss.id, boss]))
@@ -47,7 +51,7 @@ function resetAtOr(value, latest) {
 export function makeCharacter(fields = {}) {
   return {
     id: uid(),
-    name: fields.name ?? '',
+    name: (fields.name ?? '').slice(0, MAX_NAME_LENGTH),
     level: fields.level ?? 1,
     job: fields.job ?? '',
     server: fields.server ?? '',
@@ -136,7 +140,8 @@ function normalizeCharacter(c, index) {
   if (!isRecord(c)) return makeCharacter({ name: `Character ${index + 1}` })
   return {
     id: idOr(c.id),
-    name: stringOr(c.name, `Character ${index + 1}`),
+    // Truncating on load migrates names stored before the cap existed.
+    name: stringOr(c.name, `Character ${index + 1}`).slice(0, MAX_NAME_LENGTH),
     level: numberOr(c.level, 1),
     job: stringOr(c.job),
     server: stringOr(c.server),

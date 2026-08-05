@@ -16,6 +16,7 @@ import {
   maxStarForLevel,
   MAX_STAR,
   SIM_MAX_EXPECTED_ATTEMPTS,
+  estimateRunQuantiles,
 } from '@/lib/starforce'
 import { formatMeso } from '@/lib/format'
 import ScrollStatusArea from './ScrollStatusArea'
@@ -180,6 +181,10 @@ export default function StarForcePanel() {
 
   const hasResult = run !== null && run.perStar.length > 0
 
+  // Analytic typical-run figures stand in for the skipped simulation, so a
+  // tail-driven mean is never the only number on screen.
+  const est = simGated ? estimateRunQuantiles(run.cost) : null
+
   // Dim Safeguard/mode only when no attempt can ever reach them. Booms knock
   // runs back to 12-20★ checkpoints, so even a range that starts above the
   // 15-17★ (Safeguard) / 15-21★ (mode) windows re-climbs through them —
@@ -197,10 +202,14 @@ export default function StarForcePanel() {
       : '15–21 ★ only'
 
   const booms = run?.booms ?? 0
+  // For gated climbs the mean boom count is tail-driven, so the helper line
+  // talks about a typical run instead of anchoring on the huge average.
   const spares =
     booms === 0
       ? 'no spares needed'
-      : `bring ${Math.ceil(booms)} spare${Math.ceil(booms) === 1 ? '' : 's'}`
+      : simGated
+        ? `≈ ${Math.ceil(booms * Math.LN2).toLocaleString('en-US')} booms in a typical run`
+        : `bring ${Math.ceil(booms)} spare${Math.ceil(booms) === 1 ? '' : 's'}`
 
   // The cap case matters: a valid-looking range (say 20 → 25 on a Lv.130
   // item) silently clamps to the cap and produces no rows, and "pick a higher
@@ -272,9 +281,13 @@ export default function StarForcePanel() {
                   <Text size="sm" fw={600} mb={7}>
                     Current star
                   </Text>
+                  {/* Star values render live-clamped to the level cap, so a
+                      level change can never leave an out-of-range star on
+                      screen; the raw value survives until the next edit, so
+                      restoring the old level restores the stars. */}
                   <TextInput
                     aria-label="Current star"
-                    value={curRaw}
+                    value={clampRaw(curRaw, starCap)}
                     onChange={(e) =>
                       setCurRaw(
                         clampRaw(digits(e.currentTarget.value), starCap),
@@ -308,7 +321,7 @@ export default function StarForcePanel() {
                   </Text>
                   <TextInput
                     aria-label="Target star"
-                    value={targetRaw}
+                    value={clampRaw(targetRaw, starCap)}
                     onChange={(e) =>
                       setTargetRaw(
                         clampRaw(digits(e.currentTarget.value), starCap),
@@ -540,26 +553,35 @@ export default function StarForcePanel() {
             </div>
             <div>
               <Text size="sm" c="dark.2">
-                Median run
+                Median run{est ? ' (est.)' : ''}
               </Text>
               <Text size="md" fw={600} ff="monospace">
-                {sim ? formatMeso(sim.median) : '—'}
+                {sim
+                  ? formatMeso(sim.median)
+                  : est
+                    ? `≈ ${formatMeso(est.median)}`
+                    : '—'}
               </Text>
             </div>
             <div>
               <Text size="sm" c="dark.2">
-                Unlucky run (top 10%)
+                Unlucky run (top 10%{est ? ', est.' : ''})
               </Text>
               <Text size="md" fw={600} ff="monospace" c="orange.3">
-                {sim ? formatMeso(sim.p90) : '—'}
+                {sim
+                  ? formatMeso(sim.p90)
+                  : est
+                    ? `≈ ${formatMeso(est.p90)}`
+                    : '—'}
               </Text>
             </div>
             {simGated && (
               <Text size="xs" c="dimmed" style={{ flexBasis: '100%' }}>
                 simulation skipped — this climb averages{' '}
                 {Math.round(run.attempts).toLocaleString('en-US')} attempts per
-                run, far too many to replay; the expected values are exact math,
-                but a typical run will spend much less than the average
+                run, far too many to replay. Median / unlucky are analytic
+                estimates: costs this deep are close to exponential, so a
+                typical run spends well under the tail-driven average.
               </Text>
             )}
           </div>

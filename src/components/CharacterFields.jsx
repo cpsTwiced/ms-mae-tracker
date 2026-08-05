@@ -1,10 +1,7 @@
 import { Group, NumberInput, Select, TextInput } from '@mantine/core'
 import { JOB_GROUPS } from '@/data/jobs'
 import { SERVER_GROUPS } from '@/data/servers'
-
-// GMS names cap at 12 characters; double that leaves room for personal
-// labels ("Main — Hero") while keeping tiles readable.
-const NAME_MAX_LENGTH = 24
+import { MAX_NAME_LENGTH } from '@/lib/storage'
 
 // Name / level / job / server inputs, controlled by the parent.
 // `onChange` receives a partial patch, e.g. { level: 200 }.
@@ -18,10 +15,10 @@ export default function CharacterFields({
       <TextInput
         label="Name"
         placeholder={namePlaceholder}
-        maxLength={NAME_MAX_LENGTH}
+        maxLength={MAX_NAME_LENGTH}
         value={values.name}
         onChange={(e) =>
-          onChange({ name: e.currentTarget.value.slice(0, NAME_MAX_LENGTH) })
+          onChange({ name: e.currentTarget.value.slice(0, MAX_NAME_LENGTH) })
         }
       />
       <Group grow align="flex-start" mt="xs">
@@ -33,7 +30,10 @@ export default function CharacterFields({
           hideControls
           min={1}
           max={300}
-          clampBehavior="strict"
+          // "blur" clamps the committed value (typing "999" lands on 300);
+          // "strict" would reject the third keystroke and strand the field
+          // at 99.
+          clampBehavior="blur"
           allowDecimal={false}
           value={values.level}
           onChange={(val) =>

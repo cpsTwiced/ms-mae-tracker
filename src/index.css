@@ -248,6 +248,9 @@ body {
 
 .charGrid > * {
   flex: 0 0 200px;
+  /* Fixed width for real: without this, a long unbreakable name raises the
+     tile's min-content size and stretches it past the 200px basis. */
+  min-width: 0;
 }
 
 /* Each character is a tile with even padding on every edge. A transparent
@@ -311,10 +314,11 @@ body {
   pointer-events: auto;
 }
 
-/* Touch devices have no hover, so the handle would otherwise be unreachable
-   until the tile is focused. On coarse pointers keep it always grabbable. */
+/* Touch devices have no hover, so the handle would otherwise be unreachable.
+   Showing it on every tile reads as clutter — reveal it only on the ACTIVE
+   tile: tap a tile to select it, then its handle appears to drag. */
 @media (hover: none) {
-  .charTileHandle {
+  .charTile[data-active] .charTileHandle {
     opacity: 1;
     pointer-events: auto;
   }

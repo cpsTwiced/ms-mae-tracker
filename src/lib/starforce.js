@@ -173,6 +173,16 @@ export function expectedRun(level, fromStar, toStar, opts = {}) {
   }
 }
 
+// Typical-run estimates for climbs the simulation refuses. Total cost that
+// deep is dominated by the final compound-geometric chokepoint, so its
+// distribution is close to exponential around the mean. Validated against
+// the Monte Carlo on every feasible range: median/mean lands at 0.67-0.73
+// (exponential: ln 2 ≈ 0.69) and p90/mean at 2.15-2.33 (exponential:
+// ln 10 ≈ 2.30). Present these as "≈" estimates, not exact figures.
+export function estimateRunQuantiles(cost) {
+  return { median: cost * Math.LN2, p90: cost * Math.log(10) }
+}
+
 // Deterministic PRNG so simulation results are stable across renders.
 export function mulberry32(seed) {
   let t = seed >>> 0

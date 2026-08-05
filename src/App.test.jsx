@@ -86,12 +86,21 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Mule' })).toBeInTheDocument()
   })
 
-  it('caps character names at 24 characters', async () => {
+  it('caps character names at the 12-character GMS limit', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Add character' }))
     const name = await screen.findByLabelText('Name')
     fireEvent.change(name, { target: { value: 'x'.repeat(40) } })
-    expect(name.value).toHaveLength(24)
+    expect(name.value).toHaveLength(12)
+  })
+
+  it('clamps the creation Level field to 300 on commit', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Add character' }))
+    const level = await screen.findByLabelText('Level')
+    fireEvent.change(level, { target: { value: '999' } })
+    fireEvent.blur(level)
+    expect(level.value).toBe('300')
   })
 
   it('synchronizes state saved by another tab', async () => {
@@ -225,6 +234,13 @@ describe('App', () => {
     expect(
       screen.queryByRole('button', { name: 'Mule' }),
     ).not.toBeInTheDocument()
+    // The confirm dialog closes and STAYS closed — a field-reported ghost had
+    // it reopening for the already-deleted character after the fade.
+    await waitFor(() =>
+      expect(screen.queryByText('Delete Mule?')).not.toBeInTheDocument(),
+    )
+    await new Promise((resolve) => setTimeout(resolve, 350))
+    expect(screen.queryByText('Delete Mule?')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Main' })).toHaveAttribute(
       'aria-pressed',
       'true',
