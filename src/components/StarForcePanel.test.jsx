@@ -102,7 +102,7 @@ describe('StarForcePanel', () => {
     expect(screen.getByLabelText('Target star').value).toBe('8')
   })
 
-  it('hides the simulation stats for ranges too long to simulate', () => {
+  it('shows analytic estimates for ranges too long to simulate', () => {
     renderPanel()
     fill('Current star', '0')
     fill('Target star', '30')
@@ -112,6 +112,24 @@ describe('StarForcePanel', () => {
     expect(
       screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
     ).toBeInTheDocument()
+    // Median / unlucky show ≈ estimates instead of dashes, labeled as such.
+    expect(screen.getByText('Median run (est.)')).toBeInTheDocument()
+    expect(
+      screen.getByText(`≈ ${formatMeso(run.cost * Math.LN2)}`),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(`≈ ${formatMeso(run.cost * Math.log(10))}`),
+    ).toBeInTheDocument()
+  })
+
+  it('re-clamps displayed stars when the level drops the cap', () => {
+    renderPanel()
+    // Defaults 200 / 0→22; typing level 100 (cap 8★) immediately re-clamps
+    // the displayed target, and restoring the level restores the value.
+    fill('Item level', '100')
+    expect(screen.getByLabelText('Target star').value).toBe('8')
+    fill('Item level', '200')
+    expect(screen.getByLabelText('Target star').value).toBe('22')
   })
 
   it('safeguard changes the expected cost', () => {

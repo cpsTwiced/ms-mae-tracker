@@ -8,6 +8,7 @@ import {
   mulberry32,
   maxStarForLevel,
   SIM_MAX_EXPECTED_ATTEMPTS,
+  estimateRunQuantiles,
 } from './starforce'
 
 describe('maxStarForLevel', () => {
@@ -273,6 +274,26 @@ describe('simulateRuns', () => {
 
   it('returns null when there is nothing to simulate', () => {
     expect(simulateRuns(200, 22, 22)).toBeNull()
+  })
+
+  it('estimates typical-run quantiles from the exponential model', () => {
+    const { median, p90 } = estimateRunQuantiles(1000)
+    expect(median).toBeCloseTo(1000 * Math.LN2, 6)
+    expect(p90).toBeCloseTo(1000 * Math.log(10), 6)
+    // The model matches the real simulation on a feasible range: the sim's
+    // median/mean ratio sits near ln 2 and p90/mean near ln 10.
+    const mean = expectedRun(200, 17, 22, { starCatch: true }).cost
+    const sim = simulateRuns(
+      200,
+      17,
+      22,
+      { starCatch: true },
+      { runs: 4000, rng: mulberry32(7) },
+    )
+    expect(sim.median / mean).toBeGreaterThan(0.6)
+    expect(sim.median / mean).toBeLessThan(0.8)
+    expect(sim.p90 / mean).toBeGreaterThan(1.9)
+    expect(sim.p90 / mean).toBeLessThan(2.7)
   })
 
   it('refuses ranges too long to simulate honestly', () => {

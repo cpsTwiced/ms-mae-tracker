@@ -144,6 +144,7 @@ function CharacterTile({
               tt="uppercase"
               lh={1}
               lineClamp={1}
+              title={character.name}
               style={{ flex: 1, minWidth: 0 }}
             >
               {character.name}
@@ -276,6 +277,10 @@ export default function CharacterBar({
   const [editDraft, setEditDraft] = useState(EMPTY_CHARACTER_DRAFT)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // The last target's name, kept (only ever overwritten) so the confirm
+  // title stays personal while the modal fades out even after the target
+  // itself is cleared on a successful delete.
+  const [deleteName, setDeleteName] = useState('')
   // Which tile's ⋮ menu is open — exactly one at a time.
   const [menuFor, setMenuFor] = useState(null)
   const canDelete = characters.length > 1
@@ -343,7 +348,11 @@ export default function CharacterBar({
     if (!name) return
     onAdd({
       name,
-      level: typeof addDraft.level === 'number' ? addDraft.level : 1,
+      // The field clamps on blur; this covers a submit that skips the blur.
+      level:
+        typeof addDraft.level === 'number'
+          ? Math.min(300, Math.max(1, addDraft.level))
+          : 1,
       job: addDraft.job,
       server: addDraft.server,
     })
@@ -365,7 +374,10 @@ export default function CharacterBar({
     if (!name) return
     onUpdate(editTarget.id, {
       name,
-      level: typeof editDraft.level === 'number' ? editDraft.level : 1,
+      level:
+        typeof editDraft.level === 'number'
+          ? Math.min(300, Math.max(1, editDraft.level))
+          : 1,
       job: editDraft.job,
       server: editDraft.server,
     })
@@ -375,13 +387,18 @@ export default function CharacterBar({
   function startDelete(character) {
     setMenuFor(null)
     setDeleteTarget(character)
+    setDeleteName(character.name)
     setDeleteOpen(true)
   }
 
   function confirmDelete() {
     if (!deleteTarget) return
     onRemove(deleteTarget.id)
+    // Clear the flag AND the target in the same handler: with the target
+    // gone (and `opened` requiring it), no later re-render can resurrect the
+    // dialog for a character that no longer exists.
     setDeleteOpen(false)
+    setDeleteTarget(null)
   }
 
   return (
@@ -482,9 +499,9 @@ export default function CharacterBar({
       </ResponsiveModal>
 
       <ResponsiveModal
-        opened={deleteOpen}
+        opened={deleteOpen && deleteTarget !== null}
         onClose={() => setDeleteOpen(false)}
-        title={`Delete ${deleteTarget?.name ?? 'character'}?`}
+        title={`Delete ${deleteName || 'character'}?`}
       >
         <Text size="sm" c="dimmed">
           This cannot be undone. Boss and weekly progress for this character
