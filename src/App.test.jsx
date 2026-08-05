@@ -86,6 +86,14 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Mule' })).toBeInTheDocument()
   })
 
+  it('caps character names at 24 characters', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Add character' }))
+    const name = await screen.findByLabelText('Name')
+    fireEvent.change(name, { target: { value: 'x'.repeat(40) } })
+    expect(name.value).toHaveLength(24)
+  })
+
   it('synchronizes state saved by another tab', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem')
     renderApp()
@@ -223,6 +231,53 @@ describe('App', () => {
     )
     await waitFor(() =>
       expect(localStorage.getItem(STORAGE_KEY)).not.toContain('Mule'),
+    )
+  })
+
+  it('keeps only one character ⋮ menu open at a time', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        characters: [
+          {
+            id: 'main',
+            name: 'Main',
+            level: 260,
+            job: '',
+            server: '',
+            bossTasks: [],
+            weeklyTasks: [],
+          },
+          {
+            id: 'mule',
+            name: 'Mule',
+            level: 220,
+            job: '',
+            server: '',
+            bossTasks: [],
+            weeklyTasks: [],
+          },
+        ],
+        activeId: 'main',
+        bossResetAt: Date.now(),
+        weeklyResetAt: Date.now(),
+        monthlyResetAt: Date.now(),
+      }),
+    )
+
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Main actions' }))
+    expect(
+      await screen.findAllByRole('menuitem', { name: 'Edit character' }),
+    ).toHaveLength(1)
+
+    // Opening the second character's menu closes the first — never two open.
+    fireEvent.click(screen.getByRole('button', { name: 'Mule actions' }))
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('menuitem', { name: 'Edit character' }),
+      ).toHaveLength(1),
     )
   })
 

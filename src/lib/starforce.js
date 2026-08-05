@@ -185,19 +185,32 @@ export function mulberry32(seed) {
   }
 }
 
-// Per-run guard: even a 1%-success star converges long before this.
-const MAX_ATTEMPTS_PER_RUN = 100000
+// Ranges whose closed-form expected attempts exceed this are refused by the
+// simulation: near 29★-30★ the expectation grows into the millions of
+// attempts per run (boom → 20★ checkpoint, and the re-climb booms
+// recursively), which no interactive Monte Carlo can cover — a clipped
+// simulation would report a false, near-identical median and p90.
+export const SIM_MAX_EXPECTED_ATTEMPTS = 10000
+
+// Per-run hard stop, two orders of magnitude above any tail the expected-
+// attempts gate lets through — it exists so a pathological RNG stream can't
+// hang the tab, not to shape results.
+const MAX_ATTEMPTS_PER_RUN = 1000000
 
 // Monte Carlo over full runs, for distribution stats the closed form can't
 // give (median / unlucky percentiles). `rng` is injected for determinism.
 // Returns { median, p90 } of total meso spent, or null when there is nothing
-// to simulate.
+// to simulate — or when the range fails the SIM_MAX_EXPECTED_ATTEMPTS gate.
 export function simulateRuns(level, fromStar, toStar, opts = {}, options = {}) {
   const { runs = 3000, rng = mulberry32(0x5f3759df) } = options
   const cap = maxStarForLevel(level)
   const target = Math.min(toStar, cap, MAX_STAR)
   const from = Math.max(0, Math.min(fromStar, target))
   if (from >= target) return null
+  if (
+    expectedRun(level, from, target, opts).attempts > SIM_MAX_EXPECTED_ATTEMPTS
+  )
+    return null
 
   // Odds and costs are constant per star for a given options tuple.
   const odds = []

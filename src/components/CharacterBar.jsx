@@ -89,6 +89,8 @@ function CharacterTile({
   isActive,
   canReorder,
   canDelete,
+  menuOpened,
+  onMenuChange,
   onSelect,
   onEdit,
   onDelete,
@@ -146,7 +148,14 @@ function CharacterTile({
             >
               {character.name}
             </Text>
-            <Menu position="bottom-end" withinPortal>
+            {/* Controlled so the roster can enforce a single open menu at a
+                time and close it when a modal takes over. */}
+            <Menu
+              position="bottom-end"
+              withinPortal
+              opened={menuOpened}
+              onChange={onMenuChange}
+            >
               <Menu.Target>
                 <ActionIcon
                   className="charTileKebab"
@@ -259,9 +268,16 @@ export default function CharacterBar({
 }) {
   const [addOpen, setAddOpen] = useState(false)
   const [addDraft, setAddDraft] = useState(EMPTY_CHARACTER_DRAFT)
+  // Edit/delete keep their target and visibility separate: the target is
+  // retained while the modal fades out so its title never degrades to the
+  // nameless fallback mid-transition (the "ghost dialog" effect).
   const [editTarget, setEditTarget] = useState(null)
+  const [editOpen, setEditOpen] = useState(false)
   const [editDraft, setEditDraft] = useState(EMPTY_CHARACTER_DRAFT)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  // Which tile's ⋮ menu is open — exactly one at a time.
+  const [menuFor, setMenuFor] = useState(null)
   const canDelete = characters.length > 1
   const canReorder = characters.length > 1
   const atMax = characters.length >= MAX_CHARACTERS
@@ -316,6 +332,7 @@ export default function CharacterBar({
   }
 
   function startAdd() {
+    setMenuFor(null)
     setAddDraft(EMPTY_CHARACTER_DRAFT)
     setAddOpen(true)
   }
@@ -335,8 +352,10 @@ export default function CharacterBar({
   }
 
   function startEdit(character) {
+    setMenuFor(null)
     setEditTarget(character)
     setEditDraft(characterDraft(character))
+    setEditOpen(true)
   }
 
   function saveEdit(e) {
@@ -350,13 +369,19 @@ export default function CharacterBar({
       job: editDraft.job,
       server: editDraft.server,
     })
-    setEditTarget(null)
+    setEditOpen(false)
+  }
+
+  function startDelete(character) {
+    setMenuFor(null)
+    setDeleteTarget(character)
+    setDeleteOpen(true)
   }
 
   function confirmDelete() {
     if (!deleteTarget) return
     onRemove(deleteTarget.id)
-    setDeleteTarget(null)
+    setDeleteOpen(false)
   }
 
   return (
@@ -387,9 +412,11 @@ export default function CharacterBar({
                     isActive={c.id === activeId}
                     canReorder={canReorder}
                     canDelete={canDelete}
+                    menuOpened={menuFor === c.id}
+                    onMenuChange={(opened) => setMenuFor(opened ? c.id : null)}
                     onSelect={onSelect}
                     onEdit={startEdit}
-                    onDelete={setDeleteTarget}
+                    onDelete={startDelete}
                   />
                 ))}
                 {/* The Add tile rides in the scrolling row as just another tile,
@@ -429,8 +456,8 @@ export default function CharacterBar({
       </ResponsiveModal>
 
       <ResponsiveModal
-        opened={!!editTarget}
-        onClose={() => setEditTarget(null)}
+        opened={editOpen}
+        onClose={() => setEditOpen(false)}
         title={`Edit ${editTarget?.name ?? 'character'}`}
       >
         <form onSubmit={saveEdit}>
@@ -439,7 +466,7 @@ export default function CharacterBar({
             onChange={(patch) => setEditDraft((d) => ({ ...d, ...patch }))}
           />
           <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => setEditTarget(null)}>
+            <Button variant="subtle" onClick={() => setEditOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -455,8 +482,8 @@ export default function CharacterBar({
       </ResponsiveModal>
 
       <ResponsiveModal
-        opened={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        opened={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
         title={`Delete ${deleteTarget?.name ?? 'character'}?`}
       >
         <Text size="sm" c="dimmed">
@@ -464,7 +491,7 @@ export default function CharacterBar({
           will be removed.
         </Text>
         <Group justify="flex-end" mt="md">
-          <Button variant="subtle" onClick={() => setDeleteTarget(null)}>
+          <Button variant="subtle" onClick={() => setDeleteOpen(false)}>
             Cancel
           </Button>
           <Button color="red" onClick={confirmDelete}>
