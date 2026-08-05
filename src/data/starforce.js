@@ -9,10 +9,12 @@
 //   more. The notes don't publish the full per-star tables.
 // - KMS 1.2.401 reorganization notes (via Orange Mushroom): base success/boom
 //   rates for 15★+, Safeguard raised to +200% cost, cost up at 17-19★ and 21★+.
-// - Community (NamuWiki GMS tables + starforce.tadeucci.dev): per-mode boom
-//   rates and cost multipliers, boom checkpoint stars. The two agree exactly,
-//   and their star-catch-adjusted numbers derive cleanly from the KMS base
-//   rates, but they are NOT official — keep the in-UI "community-sourced" note.
+// - Community (starforce.tadeucci.dev rates.js): per-mode success/boom rates
+//   and cost multipliers, boom checkpoint stars — commented there as measured
+//   in-game (NamuWiki only carries the base KMS table, which matches ours; it
+//   has NO GMS mode table). Cross-validated against its simulator 2026-08-05,
+//   and the 20★ mode-2/4 success cells (25%/15%) adopted from its measured
+//   values. NOT official — keep the in-UI "community-sourced" note.
 // - blushiemagic/Maplestory-Starforce-Calculator: cost divisors and the
 //   round-then-×100 cost formula shape (community; its divisors match the
 //   direction of the official "17-19★ and 21★+ got pricier" note).
@@ -100,7 +102,7 @@ export const ENHANCEMENT_MODES = {
     costMult: [1, 2, 3.5, 6.5],
   },
   20: {
-    success: [0.3, 0.24, 0.2, 0.16],
+    success: [0.3, 0.25, 0.2, 0.15],
     boom: [0.105, 0.075, 0.04, 0],
     costMult: [1, 2, 3.5, 6.5],
   },
@@ -160,9 +162,10 @@ export const MVP_MAX_STAR = 16
 // toggle.
 export const GUARANTEED_STARS = [5, 10, 15]
 
-// Shining Star Force's 30% destruction reduction applies below 21★ only
-// (attempts at 20★ and under — 21★→22★ is excluded).
-export const BOOM_EVENT_MAX_STAR = 20
+// Shining Star Force's 30% destruction reduction applies until the item
+// reaches 22★ — i.e. attempts at 21★ and under, including 21★→22★. This
+// matches the community calculators (tadeucci, MathBro).
+export const BOOM_EVENT_MAX_STAR = 21
 
 // 1+1 Star Force event: attempts at 10★ and under grant 2 stars per success,
 // which naturally caps the boost at 12★.

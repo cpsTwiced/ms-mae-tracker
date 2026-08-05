@@ -55,6 +55,10 @@ describe('attemptOdds', () => {
     // Modes don't touch success below 18★.
     expect(attemptOdds(17, { mode: 2 }).success).toBe(0.15)
     expect(attemptOdds(17, { mode: 2 }).boom).toBeCloseTo(0.0425)
+    // 20★ modes 2/4 use tadeucci's in-game-measured 25%/15%, not the
+    // 24%/16% the other stars' relative-reduction pattern would predict.
+    expect(attemptOdds(20, { mode: 2 }).success).toBe(0.25)
+    expect(attemptOdds(20, { mode: 4 }).success).toBe(0.15)
     // Mode 4 never booms.
     expect(attemptOdds(21, { mode: 4 }).boom).toBe(0)
     // Modes don't exist outside 15-21★.
@@ -79,9 +83,11 @@ describe('attemptOdds', () => {
     expect(guaranteed).toEqual({ success: 1, maintain: 0, boom: 0 })
     expect(attemptOdds(14, { eventGuaranteed: true }).success).toBe(0.3)
     expect(attemptOdds(17, { eventBoom30: true }).boom).toBeCloseTo(0.0476)
-    // The boom event only reaches attempts below 21★.
-    expect(attemptOdds(21, { eventBoom30: true }).boom).toBeCloseTo(0.1275)
+    // The boom event covers every attempt until the item reaches 22★
+    // (21★→22★ included), and stops there.
+    expect(attemptOdds(21, { eventBoom30: true }).boom).toBeCloseTo(0.08925)
     expect(attemptOdds(20, { eventBoom30: true }).boom).toBeCloseTo(0.0735)
+    expect(attemptOdds(22, { eventBoom30: true }).boom).toBeCloseTo(0.17)
   })
 })
 
@@ -238,6 +244,16 @@ describe('expectedRun', () => {
     expect(expectedRun(200, 9, 12).perStar.map((r) => r.star)).toEqual([
       9, 10, 11,
     ])
+  })
+
+  it('perStar rows sum to the run totals', () => {
+    // The table column is recovery-inclusive by design, so the per-step
+    // figures must add up to the headline numbers exactly.
+    const run = expectedRun(200, 17, 22, { starCatch: true })
+    const sum = (key) => run.perStar.reduce((t, r) => t + r[key], 0)
+    expect(sum('expectedCost')).toBeCloseTo(run.cost, 6)
+    expect(sum('expectedBooms')).toBeCloseTo(run.booms, 6)
+    expect(sum('expectedAttempts')).toBeCloseTo(run.attempts, 6)
   })
 })
 

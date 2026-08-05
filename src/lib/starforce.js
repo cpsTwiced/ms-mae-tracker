@@ -9,7 +9,7 @@
 //   mode       1-4     Enhancement Mode for 15-21★ attempts (default 1)
 //   mvp        string  'none' | 'silver' | 'gold' | 'diamond'
 //   eventCost30      bool   30% off enhancement cost
-//   eventBoom30      bool   30% reduced boom chance (attempts at ≤20★)
+//   eventBoom30      bool   30% reduced boom chance (attempts at ≤21★)
 //   eventGuaranteed  bool   5/10/15★ attempts always succeed
 //   eventPlusOne     bool   +1 extra star per success on attempts at ≤10★
 
