@@ -376,7 +376,7 @@ export default function StarForcePanel() {
                 size="sm"
                 rightSection={SELECT_CHEVRON}
                 rightSectionPointerEvents="none"
-                styles={{ input: { height: 40 } }}
+                styles={{ input: { height: 40, fontSize: 16 } }}
                 allowDeselect={false}
               />
             </div>
@@ -398,7 +398,7 @@ export default function StarForcePanel() {
                 size="sm"
                 rightSection={SELECT_CHEVRON}
                 rightSectionPointerEvents="none"
-                styles={{ input: { height: 40 } }}
+                styles={{ input: { height: 40, fontSize: 16 } }}
                 allowDeselect={false}
               />
             </div>
