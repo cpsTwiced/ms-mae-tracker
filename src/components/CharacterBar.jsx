@@ -89,6 +89,8 @@ function CharacterTile({
   isActive,
   canReorder,
   canDelete,
+  menuOpened,
+  onMenuChange,
   onSelect,
   onEdit,
   onDelete,
@@ -142,11 +144,19 @@ function CharacterTile({
               tt="uppercase"
               lh={1}
               lineClamp={1}
+              title={character.name}
               style={{ flex: 1, minWidth: 0 }}
             >
               {character.name}
             </Text>
-            <Menu position="bottom-end" withinPortal>
+            {/* Controlled so the roster can enforce a single open menu at a
+                time and close it when a modal takes over. */}
+            <Menu
+              position="bottom-end"
+              withinPortal
+              opened={menuOpened}
+              onChange={onMenuChange}
+            >
               <Menu.Target>
                 <ActionIcon
                   className="charTileKebab"
@@ -259,9 +269,20 @@ export default function CharacterBar({
 }) {
   const [addOpen, setAddOpen] = useState(false)
   const [addDraft, setAddDraft] = useState(EMPTY_CHARACTER_DRAFT)
+  // Edit/delete keep their target and visibility separate: the target is
+  // retained while the modal fades out so its title never degrades to the
+  // nameless fallback mid-transition (the "ghost dialog" effect).
   const [editTarget, setEditTarget] = useState(null)
+  const [editOpen, setEditOpen] = useState(false)
   const [editDraft, setEditDraft] = useState(EMPTY_CHARACTER_DRAFT)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  // The last target's name, kept (only ever overwritten) so the confirm
+  // title stays personal while the modal fades out even after the target
+  // itself is cleared on a successful delete.
+  const [deleteName, setDeleteName] = useState('')
+  // Which tile's ⋮ menu is open — exactly one at a time.
+  const [menuFor, setMenuFor] = useState(null)
   const canDelete = characters.length > 1
   const canReorder = characters.length > 1
   const atMax = characters.length >= MAX_CHARACTERS
@@ -316,6 +337,7 @@ export default function CharacterBar({
   }
 
   function startAdd() {
+    setMenuFor(null)
     setAddDraft(EMPTY_CHARACTER_DRAFT)
     setAddOpen(true)
   }
@@ -326,7 +348,11 @@ export default function CharacterBar({
     if (!name) return
     onAdd({
       name,
-      level: typeof addDraft.level === 'number' ? addDraft.level : 1,
+      // The field clamps on blur; this covers a submit that skips the blur.
+      level:
+        typeof addDraft.level === 'number'
+          ? Math.min(300, Math.max(1, addDraft.level))
+          : 1,
       job: addDraft.job,
       server: addDraft.server,
     })
@@ -335,8 +361,10 @@ export default function CharacterBar({
   }
 
   function startEdit(character) {
+    setMenuFor(null)
     setEditTarget(character)
     setEditDraft(characterDraft(character))
+    setEditOpen(true)
   }
 
   function saveEdit(e) {
@@ -346,22 +374,36 @@ export default function CharacterBar({
     if (!name) return
     onUpdate(editTarget.id, {
       name,
-      level: typeof editDraft.level === 'number' ? editDraft.level : 1,
+      level:
+        typeof editDraft.level === 'number'
+          ? Math.min(300, Math.max(1, editDraft.level))
+          : 1,
       job: editDraft.job,
       server: editDraft.server,
     })
-    setEditTarget(null)
+    setEditOpen(false)
+  }
+
+  function startDelete(character) {
+    setMenuFor(null)
+    setDeleteTarget(character)
+    setDeleteName(character.name)
+    setDeleteOpen(true)
   }
 
   function confirmDelete() {
     if (!deleteTarget) return
     onRemove(deleteTarget.id)
+    // Clear the flag AND the target in the same handler: with the target
+    // gone (and `opened` requiring it), no later re-render can resurrect the
+    // dialog for a character that no longer exists.
+    setDeleteOpen(false)
     setDeleteTarget(null)
   }
 
   return (
     <>
-      <Card withBorder radius="md" padding="md" pb="sm" mt="md">
+      <Card withBorder radius="md" padding="md" pb="sm">
         <Stack gap="sm">
           {/* Pane title, matching Boss Content / Timers. */}
           <Text fw={600}>Characters</Text>
@@ -387,9 +429,11 @@ export default function CharacterBar({
                     isActive={c.id === activeId}
                     canReorder={canReorder}
                     canDelete={canDelete}
+                    menuOpened={menuFor === c.id}
+                    onMenuChange={(opened) => setMenuFor(opened ? c.id : null)}
                     onSelect={onSelect}
                     onEdit={startEdit}
-                    onDelete={setDeleteTarget}
+                    onDelete={startDelete}
                   />
                 ))}
                 {/* The Add tile rides in the scrolling row as just another tile,
@@ -429,8 +473,8 @@ export default function CharacterBar({
       </ResponsiveModal>
 
       <ResponsiveModal
-        opened={!!editTarget}
-        onClose={() => setEditTarget(null)}
+        opened={editOpen}
+        onClose={() => setEditOpen(false)}
         title={`Edit ${editTarget?.name ?? 'character'}`}
       >
         <form onSubmit={saveEdit}>
@@ -439,7 +483,7 @@ export default function CharacterBar({
             onChange={(patch) => setEditDraft((d) => ({ ...d, ...patch }))}
           />
           <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => setEditTarget(null)}>
+            <Button variant="subtle" onClick={() => setEditOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -455,16 +499,16 @@ export default function CharacterBar({
       </ResponsiveModal>
 
       <ResponsiveModal
-        opened={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title={`Delete ${deleteTarget?.name ?? 'character'}?`}
+        opened={deleteOpen && deleteTarget !== null}
+        onClose={() => setDeleteOpen(false)}
+        title={`Delete ${deleteName || 'character'}?`}
       >
         <Text size="sm" c="dimmed">
           This cannot be undone. Boss and weekly progress for this character
           will be removed.
         </Text>
         <Group justify="flex-end" mt="md">
-          <Button variant="subtle" onClick={() => setDeleteTarget(null)}>
+          <Button variant="subtle" onClick={() => setDeleteOpen(false)}>
             Cancel
           </Button>
           <Button color="red" onClick={confirmDelete}>

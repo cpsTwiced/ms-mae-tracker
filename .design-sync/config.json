@@ -1,0 +1,45 @@
+{
+  "projectId": "a2d90b3e-0005-41e5-94d5-023168cb35d8",
+  "shape": "package",
+  "pkg": "maplet",
+  "globalName": "Maplet",
+  "srcDir": "src",
+  "entry": ".design-sync/entry.mjs",
+  "tsconfig": ".design-sync/tsconfig.sync.json",
+  "readmeHeader": ".design-sync/conventions.md",
+  "provider": { "component": "MapletProvider" },
+  "overrides": {
+    "BossEditModal": { "cardMode": "single", "viewport": "620x760" },
+    "WeeklyEditModal": { "cardMode": "single", "viewport": "620x760" },
+    "ResponsiveModal": { "cardMode": "single", "viewport": "620x640" },
+    "Tracker": { "cardMode": "column" },
+    "CharacterBar": { "cardMode": "column" }
+  },
+  "componentSrcMap": {
+    "MapletProvider": "src/components/MapletProvider.jsx",
+    "DifficultyBadge": "src/components/DifficultyBadge.jsx",
+    "Timers": "src/components/Timers.jsx",
+    "ContentPanel": "src/components/ContentPanel.jsx",
+    "ScrollStatusArea": "src/components/ScrollStatusArea.jsx",
+    "ResponsiveModal": "src/components/ResponsiveModal.jsx",
+    "CharacterBar": "src/components/CharacterBar.jsx",
+    "CharacterFields": "src/components/CharacterFields.jsx",
+    "BossEditModal": "src/components/BossEditModal.jsx",
+    "WeeklyEditModal": "src/components/WeeklyEditModal.jsx",
+    "Tracker": "src/components/Tracker.jsx",
+    "App": null
+  },
+  "dtsPropsFor": {
+    "MapletProvider": "children?: React.ReactNode;",
+    "DifficultyBadge": "/** Difficulty label; also picks the pill palette. */ difficulty: 'Easy' | 'Normal' | 'Hard' | 'Chaos' | 'Extreme'; style?: React.CSSProperties; /** Remaining props pass through to Mantine Badge. */ [key: string]: unknown;",
+    "Timers": "/** Card showing daily/weekly/event reset countdowns in the viewer's local timezone. Self-contained (ticks every second). */ className?: string;",
+    "ContentPanel": "title: React.ReactNode; /** Flat row list (used when `sections` is not given). */ items?: Array<{ id: string; name: string; done: boolean; img?: string | null; difficulty?: 'Easy' | 'Normal' | 'Hard' | 'Chaos' | 'Extreme' }>; /** Grouped rows under small headers; overrides `items`. */ sections?: Array<{ key: string; label: React.ReactNode; items: Array<{ id: string; name: string; done: boolean; img?: string | null; difficulty?: string }> }>; /** Opens the picker modal (the header's Edit button). */ onEdit?: () => void; onToggle?: (id: string) => void; onRemove?: (id: string) => void; onReorder?: (nextItems: unknown[]) => void; emptyText?: string; allowRemove?: boolean; showAvatar?: boolean; reorderable?: boolean; /** Body scrolls inside a fixed-height pane (desktop planner layout). */ scrollable?: boolean; className?: string;",
+    "ScrollStatusArea": "/** Mantine ScrollArea that reserves scrollbar space only when content actually overflows. */ autosize?: boolean; /** Change this value to re-measure (e.g. list identity). */ refreshKey?: unknown; viewportProps?: Record<string, unknown>; /** Which bars to show and track ('y' default); 'xy' also reserves bottom space when rows overflow sideways. */ scrollbars?: 'x' | 'y' | 'xy'; /** Remaining props pass through to Mantine ScrollArea. */ [key: string]: unknown;",
+    "ResponsiveModal": "/** Mantine Modal that goes full-screen below the `sm` breakpoint. All Mantine Modal props pass through. */ opened: boolean; onClose: () => void; title?: React.ReactNode; size?: string | number; children?: React.ReactNode; [key: string]: unknown;",
+    "CharacterBar": "/** Horizontal character roster: tiles + dashed Add tile; owns its add/edit/delete modals. */ characters: Array<{ id: string; name: string; level: number | ''; job: string | null; server: string | null; bossTasks: unknown[]; weeklyTasks: unknown[] }>; activeId: string; onSelect: (id: string) => void; onAdd: (fields: { name: string; level: number | ''; job: string | null; server: string | null }) => void; onUpdate: (id: string, patch: Record<string, unknown>) => void; onRemove: (id: string) => void; onReorder: (next: unknown[]) => void;",
+    "CharacterFields": "/** Name / Level / Job / Server inputs, controlled by the parent. */ values: { name: string; level: number | ''; job: string | null; server: string | null }; /** Receives a partial patch, e.g. { level: 200 }. */ onChange: (patch: Record<string, unknown>) => void; namePlaceholder?: string;",
+    "BossEditModal": "/** Checkbox picker for weekly/monthly boss difficulties (one difficulty per boss). */ opened: boolean; onClose: () => void; character: { bossTasks: Array<{ key: string }> }; onSetDifficulty: (boss: unknown, diff: unknown, checked: boolean) => void; onUnselectAll: () => void;",
+    "WeeklyEditModal": "/** Checkbox picker for weekly content. */ opened: boolean; onClose: () => void; character: { weeklyTasks: Array<{ key: string }> }; onSetContent: (content: unknown, checked: boolean) => void;",
+    "Tracker": "/** The whole planner: meta header, Timers, Boss + Weekly ContentPanels, and both picker modals. */ character: { id: string; name: string; level: number | ''; job: string | null; server: string | null; bossTasks: Array<{ id: string; key: string; name: string; done: boolean; img?: string | null; difficulty?: string; level?: number | string; bossId?: string }>; weeklyTasks: Array<{ id: string; key: string; name: string; done: boolean }> }; onToggleBoss: (id: string) => void; onRemoveBoss: (id: string) => void; onReorderBoss: (next: unknown[]) => void; onSetBossDifficulty: (boss: unknown, diff: unknown, checked: boolean) => void; onClearBosses: () => void; onToggleWeekly: (id: string) => void; onRemoveWeekly: (id: string) => void; onReorderWeekly: (next: unknown[]) => void; onSetWeeklyContent: (content: unknown, checked: boolean) => void;"
+  }
+}

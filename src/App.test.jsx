@@ -47,6 +47,21 @@ describe('App', () => {
     expect(screen.getByText(/No boss content yet/i)).toBeInTheDocument()
   })
 
+  it('switches between the Planner and Star Force tabs', () => {
+    renderApp()
+    // Planner is the default: the calculator is not mounted.
+    expect(screen.queryByText('Enhancement table')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Star Force' }))
+    expect(screen.getByText('Enhancement table')).toBeInTheDocument()
+    // The inactive view is unmounted entirely (conditional render), which
+    // also stops the planner's timers while the calculator is open.
+    expect(screen.queryByText('Boss Content')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Planner' }))
+    expect(screen.getByText('Boss Content')).toBeInTheDocument()
+  })
+
   it('adds a character and persists it', async () => {
     const first = renderApp()
 
@@ -69,6 +84,23 @@ describe('App', () => {
     first.unmount()
     renderApp()
     expect(screen.getByRole('button', { name: 'Mule' })).toBeInTheDocument()
+  })
+
+  it('caps character names at the 12-character GMS limit', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Add character' }))
+    const name = await screen.findByLabelText('Name')
+    fireEvent.change(name, { target: { value: 'x'.repeat(40) } })
+    expect(name.value).toHaveLength(12)
+  })
+
+  it('clamps the creation Level field to 300 on commit', async () => {
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Add character' }))
+    const level = await screen.findByLabelText('Level')
+    fireEvent.change(level, { target: { value: '999' } })
+    fireEvent.blur(level)
+    expect(level.value).toBe('300')
   })
 
   it('synchronizes state saved by another tab', async () => {
@@ -202,12 +234,66 @@ describe('App', () => {
     expect(
       screen.queryByRole('button', { name: 'Mule' }),
     ).not.toBeInTheDocument()
+    // The confirm dialog closes and STAYS closed — a field-reported ghost had
+    // it reopening for the already-deleted character after the fade.
+    await waitFor(() =>
+      expect(screen.queryByText('Delete Mule?')).not.toBeInTheDocument(),
+    )
+    await new Promise((resolve) => setTimeout(resolve, 350))
+    expect(screen.queryByText('Delete Mule?')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Main' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
     await waitFor(() =>
       expect(localStorage.getItem(STORAGE_KEY)).not.toContain('Mule'),
+    )
+  })
+
+  it('keeps only one character ⋮ menu open at a time', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        characters: [
+          {
+            id: 'main',
+            name: 'Main',
+            level: 260,
+            job: '',
+            server: '',
+            bossTasks: [],
+            weeklyTasks: [],
+          },
+          {
+            id: 'mule',
+            name: 'Mule',
+            level: 220,
+            job: '',
+            server: '',
+            bossTasks: [],
+            weeklyTasks: [],
+          },
+        ],
+        activeId: 'main',
+        bossResetAt: Date.now(),
+        weeklyResetAt: Date.now(),
+        monthlyResetAt: Date.now(),
+      }),
+    )
+
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Main actions' }))
+    expect(
+      await screen.findAllByRole('menuitem', { name: 'Edit character' }),
+    ).toHaveLength(1)
+
+    // Opening the second character's menu closes the first — never two open.
+    fireEvent.click(screen.getByRole('button', { name: 'Mule actions' }))
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('menuitem', { name: 'Edit character' }),
+      ).toHaveLength(1),
     )
   })
 

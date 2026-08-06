@@ -1,6 +1,7 @@
 import { Group, NumberInput, Select, TextInput } from '@mantine/core'
 import { JOB_GROUPS } from '@/data/jobs'
 import { SERVER_GROUPS } from '@/data/servers'
+import { MAX_NAME_LENGTH } from '@/lib/storage'
 
 // Name / level / job / server inputs, controlled by the parent.
 // `onChange` receives a partial patch, e.g. { level: 200 }.
@@ -14,19 +15,25 @@ export default function CharacterFields({
       <TextInput
         label="Name"
         placeholder={namePlaceholder}
+        maxLength={MAX_NAME_LENGTH}
         value={values.name}
-        onChange={(e) => onChange({ name: e.currentTarget.value })}
+        onChange={(e) =>
+          onChange({ name: e.currentTarget.value.slice(0, MAX_NAME_LENGTH) })
+        }
       />
       <Group grow align="flex-start" mt="xs">
         <NumberInput
           label="Level"
-          // Hide the steppers so the field can use the app default radius ('lg')
-          // and match the Name/Job/Server inputs — the large rounded corner
-          // otherwise clips the increment/decrement buttons.
+          // Hide the steppers so the field matches the Name/Job/Server inputs
+          // — the rounded corner otherwise clips the increment/decrement
+          // buttons.
           hideControls
           min={1}
           max={300}
-          clampBehavior="strict"
+          // "blur" clamps the committed value (typing "999" lands on 300);
+          // "strict" would reject the third keystroke and strand the field
+          // at 99.
+          clampBehavior="blur"
           allowDecimal={false}
           value={values.level}
           onChange={(val) =>
