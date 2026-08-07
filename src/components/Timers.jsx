@@ -5,7 +5,7 @@ import {
   nextBossReset,
   nextEventReset,
 } from '@/lib/weeklyReset'
-import { GOLDEN_TIME_WINDOWS, ursusGoldenTime } from '@/lib/ursus'
+import { GOLDEN_TIME_WINDOWS, ursusGoldenTime, windowTimes } from '@/lib/ursus'
 import { formatCountdown } from '@/lib/format'
 
 // Show each reset in the viewer's local timezone — the countdown itself is an
@@ -22,18 +22,13 @@ function localTime(ts, withWeekday) {
 
 // A window's hours rendered in the viewer's local timezone, e.g. "6:00 PM–10:00 PM".
 function localWindow(w, now) {
-  const dayStart = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-  )
-  const HOUR_MS = 60 * 60 * 1000
+  const { start, end } = windowTimes(w, now)
   const fmt = (ts) =>
     new Date(ts).toLocaleTimeString(undefined, {
       hour: 'numeric',
       minute: '2-digit',
     })
-  return `${fmt(dayStart + w.startHour * HOUR_MS)}–${fmt(dayStart + w.endHour * HOUR_MS)}`
+  return `${fmt(start)}–${fmt(end)}`
 }
 
 const TIMERS = [
