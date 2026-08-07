@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Card, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { Badge, Card, Group, Stack, Text, Tooltip } from '@mantine/core'
 import {
   nextDailyReset,
   nextBossReset,
   nextEventReset,
 } from '@/lib/weeklyReset'
+import { GOLDEN_TIME_WINDOWS, ursusGoldenTime } from '@/lib/ursus'
 import { formatCountdown } from '@/lib/format'
 
 // Show each reset in the viewer's local timezone — the countdown itself is an
@@ -17,6 +18,22 @@ function localTime(ts, withWeekday) {
     minute: '2-digit',
     timeZoneName: 'short',
   })
+}
+
+// A window's hours rendered in the viewer's local timezone, e.g. "6:00 PM–10:00 PM".
+function localWindow(w, now) {
+  const dayStart = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  )
+  const HOUR_MS = 60 * 60 * 1000
+  const fmt = (ts) =>
+    new Date(ts).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  return `${fmt(dayStart + w.startHour * HOUR_MS)}–${fmt(dayStart + w.endHour * HOUR_MS)}`
 }
 
 const TIMERS = [
@@ -55,6 +72,11 @@ export default function Timers({ className }) {
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
+
+  // Ursus Golden Time is a recurring 2x-meso window, not a reset: when it's
+  // active we count down to its end, otherwise to the next window's start.
+  const ursus = ursusGoldenTime(new Date(now))
+  const ursusTarget = ursus.active ? ursus.end : ursus.start
 
   return (
     <Card withBorder radius="md" padding="sm" className={className}>
@@ -99,6 +121,44 @@ export default function Timers({ className }) {
             </Group>
           )
         })}
+        <Group justify="space-between" wrap="nowrap">
+          <div>
+            <Group gap={6} wrap="nowrap">
+              <Text size="sm">Ursus Golden Time</Text>
+              {ursus.active && (
+                <Badge size="xs" color="sage" variant="light">
+                  2x now
+                </Badge>
+              )}
+              <Tooltip
+                withArrow
+                label={
+                  <Stack gap={2}>
+                    <Text size="xs" fw={600}>
+                      2x mesos in Ursus, twice daily (your time):
+                    </Text>
+                    {GOLDEN_TIME_WINDOWS.map((w) => (
+                      <Text key={w.startHour} size="xs">
+                        • {localWindow(w, new Date(now))}
+                      </Text>
+                    ))}
+                  </Stack>
+                }
+              >
+                <Text size="xs" c="dimmed" style={{ cursor: 'help' }}>
+                  ⓘ
+                </Text>
+              </Tooltip>
+            </Group>
+            <Text size="xs" c="dimmed">
+              {ursus.active ? 'ends' : 'starts'} {localTime(ursusTarget, false)}{' '}
+              your time
+            </Text>
+          </div>
+          <Text size="sm" c="sage" ff="monospace">
+            {formatCountdown(ursusTarget - now)}
+          </Text>
+        </Group>
       </Stack>
     </Card>
   )
