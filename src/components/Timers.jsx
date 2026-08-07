@@ -126,7 +126,7 @@ export default function Timers({ className }) {
             <Group gap={6} wrap="nowrap">
               <Text size="sm">Ursus Golden Time</Text>
               {ursus.active && (
-                <Badge size="xs" color="sage" variant="light">
+                <Badge size="xs" color="yellow" variant="filled">
                   2x now
                 </Badge>
               )}
@@ -151,13 +151,18 @@ export default function Timers({ className }) {
               </Tooltip>
             </Group>
             <Text size="xs" c="dimmed">
-              {ursus.active ? 'ends' : 'starts'} {localTime(ursusTarget, false)}{' '}
-              your time
+              {ursus.active ? '2x mesos until' : 'next at'}{' '}
+              {localTime(ursusTarget, false)} your time
             </Text>
           </div>
-          <Text size="sm" c="sage" ff="monospace">
-            {formatCountdown(ursusTarget - now)}
-          </Text>
+          <div style={{ textAlign: 'right' }}>
+            <Text size="xs" c="dimmed">
+              {ursus.active ? 'ends in' : 'starts in'}
+            </Text>
+            <Text size="sm" c={ursus.active ? 'yellow' : 'sage'} ff="monospace">
+              {formatCountdown(ursusTarget - now)}
+            </Text>
+          </div>
         </Group>
       </Stack>
     </Card>
