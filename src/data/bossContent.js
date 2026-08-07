@@ -198,14 +198,12 @@ export const BOSS_CONTENT = [
     // Jupiter — "Geardrak Apex Raid" boss added in GMS v.270 "Ride the
     // Lightning" Part 2 (2026-07-22). Standard Thursday weekly reset; counts
     // toward the weekly boss clear limit. Both difficulties enter at Lv.295,
-    // gated by Authentic Force past that.
-    // No portrait yet: maplestory.io data stops at v.268 (pre-Jupiter), so the
-    // initials avatar stands in until art is sourced (e.g. the community
-    // MapleStory Wiki's `Mob Jupiter` sprite, like other recent bosses).
+    // gated by Authentic Force past that. Portrait is the community MapleStory
+    // Wiki's `Mob Jupiter` sprite (maplestory.io has no post-v.268 data).
     id: 'jupiter',
     name: 'Jupiter',
     cadence: 'weekly',
-    img: null,
+    img: '/bosses/jupiter.png',
     difficulties: [
       { d: 'Normal', level: 295 },
       { d: 'Hard', level: 295 },
