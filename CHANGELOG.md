@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.2.0...v1.3.0) (2026-08-07)
+
+### Features
+
+- add Jupiter (v.270) to boss catalog and Ursus Golden Time timer ([a67c7bd](https://github.com/cpsTwiced/ms-mae-tracker/commit/a67c7bdeabca6a52d92a936a1b1e99f0c45b720b))
+- add Jupiter portrait from the community MapleStory Wiki ([861f6a8](https://github.com/cpsTwiced/ms-mae-tracker/commit/861f6a81a2ad5303c70d1605615b403994164065))
+- clarify Ursus timer states with labeled countdown and gold accent ([1fffef0](https://github.com/cpsTwiced/ms-mae-tracker/commit/1fffef03459fa6718bd23eefe331af84e1c405ee))
+
 # [1.2.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.1.0...v1.2.0) (2026-08-06)
 
 ### Bug Fixes
