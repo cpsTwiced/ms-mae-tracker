@@ -53,8 +53,9 @@ const RUN_OPTIONS = [
 // Simulation seed: fixed so the median/p90 don't jitter on every keystroke.
 const SIM_SEED = 0x5f3759df
 
-// Tallest the phone results bar gets (67px plus a ~34px iPhone home-indicator
-// inset). The result cards count as on screen only once they clear it.
+// Headroom over the phone results bar's height (67px, 84px when a wide value
+// wraps its label). The result cards count as on screen only once they clear
+// it; index.css uses the same value for the bar's scroll-padding-bottom.
 const BAR_CLEARANCE = 104
 
 function digits(value) {
@@ -714,7 +715,14 @@ export default function StarForcePanel() {
             {boomsText}
           </Text>
         </div>
-        <Button component="span" size="xs" px="md" variant="light" ml="auto">
+        <Button
+          component="span"
+          size="xs"
+          px="md"
+          variant="light"
+          ml="auto"
+          style={{ flexShrink: 0 }}
+        >
           Full breakdown<span aria-hidden="true">&nbsp;↓</span>
         </Button>
       </UnstyledButton>

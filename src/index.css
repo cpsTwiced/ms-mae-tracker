@@ -750,7 +750,7 @@ body {
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: var(--mantine-color-dark-7);
   border-top: 1px solid var(--mantine-color-dark-5);
@@ -763,6 +763,12 @@ body {
 .sfBar:not([data-visible]) {
   opacity: 0;
   transform: translateY(100%);
+}
+
+/* Keep keyboard-focused controls from scrolling in under the visible bar
+   (matches BAR_CLEARANCE in StarForcePanel.jsx). */
+html:has(.sfBar[data-visible]) {
+  scroll-padding-bottom: 104px;
 }
 
 .sfBarValue {

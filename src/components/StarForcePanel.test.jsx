@@ -219,6 +219,7 @@ describe('StarForcePanel', () => {
 describe('phone results bar', () => {
   let reportHero
   afterEach(() => {
+    vi.restoreAllMocks()
     delete window.IntersectionObserver
   })
 
@@ -253,7 +254,6 @@ describe('phone results bar', () => {
     // Scrolled past the cards (down in the table): still out of the way.
     reportHero({ isIntersecting: false, boundingClientRect: { top: -300 } })
     expect(bar).toHaveAttribute('inert')
-    scrollIntoView.mockRestore()
   })
 })
 
