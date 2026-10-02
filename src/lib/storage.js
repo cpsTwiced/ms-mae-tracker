@@ -1,6 +1,7 @@
 import { lastBossReset, lastQuestReset, lastMonthlyReset } from './weeklyReset'
 import { BOSS_CONTENT } from '@/data/bossContent'
 import { WEEKLY_CONTENT } from '@/data/weeklyContent'
+import { MAX_STAR, MVP_DISCOUNTS } from '@/data/starforce'
 
 // Namespace for the first public release. Earlier dev-only builds used other
 // keys; their data is intentionally not migrated (a clean v1 starting point).
@@ -150,22 +151,22 @@ function normalizeCharacter(c, index) {
   }
 }
 
+// Gives any entry whose id repeats an earlier one a fresh id.
+function uniqueIds(items) {
+  const seen = new Set()
+  return items.map((item) => {
+    const repeat = seen.has(item.id)
+    const id = repeat ? uid() : item.id
+    seen.add(id)
+    return repeat ? { ...item, id } : item
+  })
+}
+
 function normalize(state) {
   if (!Array.isArray(state?.characters) || state.characters.length === 0) {
     return freshState()
   }
-  const seen = new Set()
-  const characters = state.characters
-    .map(normalizeCharacter)
-    .map((character) => {
-      if (!seen.has(character.id)) {
-        seen.add(character.id)
-        return character
-      }
-      const id = uid()
-      seen.add(id)
-      return { ...character, id }
-    })
+  const characters = uniqueIds(state.characters.map(normalizeCharacter))
   const ids = characters.map((c) => c.id)
   return {
     characters,
@@ -199,6 +200,113 @@ export function deserializeState(raw) {
 export function saveState(state) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    return true
+  } catch {
+    return false
+  }
+}
+
+// --- Star Force saved setups ----------------------------------------------
+
+// Saved calculator setups live under their own key so they can never touch
+// planner data. The calculator's live inputs still don't persist.
+export const PRESETS_KEY = 'maple-sf-presets-v1'
+export const MAX_PRESETS = 30
+export const MAX_PRESET_NAME_LENGTH = 24
+
+// Every calculator input, in its stored form. Level/stars stay raw strings
+// (what the text fields hold) so a half-cleared field round-trips as-is.
+export const SF_DEFAULTS = {
+  levelRaw: '200',
+  curRaw: '0',
+  targetRaw: '22',
+  starCatch: true,
+  safeguard: false,
+  mode: 1,
+  mvp: 'none',
+  eventShining: false,
+  eventPlusOne: false,
+  runs: '3000',
+}
+
+const SF_RUNS = ['1000', '3000', '10000', '20000']
+
+function digitsOr(value, max, fallback) {
+  if (typeof value !== 'string') return fallback
+  const digits = value.replace(/\D/g, '')
+  return digits === '' ? '' : String(Math.min(Number(digits), max))
+}
+
+function boolOr(value, fallback) {
+  return value === undefined ? fallback : !!value
+}
+
+function normalizeSfInputs(inputs) {
+  const i = isRecord(inputs) ? inputs : {}
+  const d = SF_DEFAULTS
+  return {
+    levelRaw: digitsOr(i.levelRaw, 300, d.levelRaw),
+    curRaw: digitsOr(i.curRaw, MAX_STAR, d.curRaw),
+    targetRaw: digitsOr(i.targetRaw, MAX_STAR, d.targetRaw),
+    starCatch: boolOr(i.starCatch, d.starCatch),
+    safeguard: boolOr(i.safeguard, d.safeguard),
+    mode: [1, 2, 3, 4].includes(i.mode) ? i.mode : d.mode,
+    mvp: Object.hasOwn(MVP_DISCOUNTS, i.mvp) ? i.mvp : d.mvp,
+    eventShining: boolOr(i.eventShining, d.eventShining),
+    eventPlusOne: boolOr(i.eventPlusOne, d.eventPlusOne),
+    runs: SF_RUNS.includes(i.runs) ? i.runs : d.runs,
+  }
+}
+
+// Splits a name into the characters a person sees, so the length cap counts
+// an emoji as one and never cuts one in half. Firefox before 125 has no
+// Segmenter; splitting by code point there keeps simple emoji whole but can
+// separate multi-part ones (skin tones, flags, ZWJ sequences).
+let segmenter
+export function nameChars(name) {
+  if (!Intl.Segmenter) return Array.from(name)
+  segmenter ??= new Intl.Segmenter()
+  return Array.from(segmenter.segment(name), (s) => s.segment)
+}
+
+function presetName(name) {
+  return nameChars(name.trim()).slice(0, MAX_PRESET_NAME_LENGTH).join('')
+}
+
+export function makePreset(name, inputs) {
+  return { id: uid(), name: presetName(name), inputs: { ...inputs } }
+}
+
+function normalizePresets(list) {
+  if (!Array.isArray(list)) return []
+  return uniqueIds(
+    list
+      .filter(isRecord)
+      .slice(0, MAX_PRESETS)
+      .map((p) => ({
+        id: idOr(p.id),
+        name: presetName(stringOr(p.name)) || 'Untitled',
+        inputs: normalizeSfInputs(p.inputs),
+      })),
+  )
+}
+
+export function loadPresets() {
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY)
+    const presets = normalizePresets(JSON.parse(raw))
+    // Store any repairs: a repaired id is random, so without this every read
+    // would give that setup a new id and changes to it would miss.
+    if (raw !== null && JSON.stringify(presets) !== raw) savePresets(presets)
+    return presets
+  } catch {
+    return []
+  }
+}
+
+export function savePresets(presets) {
+  try {
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(presets))
     return true
   } catch {
     return false
