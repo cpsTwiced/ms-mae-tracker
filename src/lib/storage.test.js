@@ -300,7 +300,7 @@ describe('Star Force presets', () => {
     )
   })
 
-  it('still keeps emoji whole in browsers without Intl.Segmenter', () => {
+  it('keeps single-code-point emoji whole without Intl.Segmenter', () => {
     vi.stubGlobal('Intl', {})
     try {
       const name = 'x'.repeat(MAX_PRESET_NAME_LENGTH - 1) + '🔥🔥'
@@ -335,6 +335,8 @@ describe('Star Force presets', () => {
     expect(dupe.inputs.starCatch).toBe(false)
     expect(noInputs.name).toHaveLength(MAX_PRESET_NAME_LENGTH)
     expect(noInputs.inputs).toEqual(SF_DEFAULTS)
+    // The repaired id was stored, so the next read agrees on it.
+    expect(loadPresets()[1].id).toBe(dupe.id)
   })
 
   it('keeps at most the max number of presets', () => {

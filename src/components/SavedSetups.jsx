@@ -51,7 +51,9 @@ const UPDATED_NOTE_MS = 2000
 // would crowd the setup name out of the picker (fully, on a 320px phone).
 const COMPACT_ROW_WIDTH = 360
 
-const SELECT_CHEVRON = (
+// Plain down-arrow chevron for the dropdowns (Mantine's default indicator
+// doesn't match the design). The calculator's other dropdowns use it too.
+export const SELECT_CHEVRON = (
   <svg
     width="12"
     height="12"
@@ -167,7 +169,9 @@ function NameModal({
             value={name}
             onChange={(e) =>
               setName(
-                nameChars(e.currentTarget.value)
+                // Leading spaces are trimmed on submit, so they mustn't use
+                // up the cap and push the end of a pasted name off.
+                nameChars(e.currentTarget.value.trimStart())
                   .slice(0, MAX_PRESET_NAME_LENGTH)
                   .join(''),
               )
@@ -212,7 +216,12 @@ function ReorderRow({ preset }) {
         variant="subtle"
         color="gray"
         size="sm"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        // Without this a touch drag scrolls the full-screen dialog on phones
+        // instead of moving the row.
+        style={{
+          cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+        }}
         aria-label={`Drag ${preset.name} to reorder`}
         {...attributes}
         {...listeners}
@@ -230,7 +239,7 @@ function ReorderRow({ preset }) {
   )
 }
 
-function ReorderList({ presets, onReorder }) {
+function ReorderList({ presets, onReorder, onDragging }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, {
@@ -239,6 +248,7 @@ function ReorderList({ presets, onReorder }) {
   )
 
   function handleDragEnd({ active, over }) {
+    onDragging(false)
     if (!over || active.id === over.id) return
     onReorder(active.id, over.id)
   }
@@ -247,7 +257,9 @@ function ReorderList({ presets, onReorder }) {
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      onDragStart={() => onDragging(true)}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => onDragging(false)}
     >
       <SortableContext
         items={presets.map((p) => p.id)}
@@ -271,45 +283,63 @@ export default function SavedSetups({ inputs, onLoad }) {
   // picker, so names and tags get the full card width.
   const { ref: rowRef, width: rowWidth } = useElementSize()
   const [activeId, setActiveId] = useState(null)
-  const [saveFailed, setSaveFailed] = useState(false)
-  // The inputs object that was just written by Update. Any edit replaces the
-  // inputs object, so the "Updated" note gives way to "Edited" immediately.
-  const [updatedFor, setUpdatedFor] = useState(null)
-  const updatedNote = updatedFor !== null && updatedFor === inputs
+  // Changes whose write failed. They're replayed on every later write, so
+  // they stay listed and reach storage once it works again.
+  const [unsaved, setUnsaved] = useState([])
+  // Bumped by each Update (restarting its timer); 0 means no "Updated" note.
+  const [updatedNote, setUpdatedNote] = useState(0)
   // Which dialog is open: 'save' | 'rename' | 'reorder' | 'delete' | null.
   const [dialog, setDialog] = useState(null)
+  // A drag is in progress in the Reorder dialog (Escape then cancels the drag
+  // instead of closing the dialog).
+  const [dragging, setDragging] = useState(false)
 
+  // Null once the loaded setup is gone (e.g. deleted in another tab).
   const active = presets.find((p) => p.id === activeId) ?? null
   const edited = active !== null && !sameInputs(active.inputs, inputs)
+  const updated = active !== null && !edited && updatedNote > 0
   const full = presets.length >= MAX_PRESETS
 
   useEffect(() => {
-    if (updatedFor === null) return undefined
-    const id = setTimeout(() => setUpdatedFor(null), UPDATED_NOTE_MS)
+    if (!updatedNote) return undefined
+    const id = setTimeout(() => setUpdatedNote(0), UPDATED_NOTE_MS)
     return () => clearTimeout(id)
-  }, [updatedFor])
+  }, [updatedNote])
+
+  // A real edit ends the note, so editing back to the saved values doesn't
+  // bring it back. Re-setting a field to the same value isn't an edit.
+  useEffect(() => {
+    if (edited) setUpdatedNote(0)
+  }, [edited])
 
   // Each change is applied to a fresh read of storage rather than this tab's
-  // copy, so a setup saved in another open tab is never written over. After a
-  // failed write storage is behind this tab, so keep working from memory.
+  // copy, so a setup saved in another open tab is never written over.
   function commit(change) {
-    const next = change(saveFailed ? presets : loadPresets())
+    const changes = [...unsaved, change]
+    const next = changes.reduce((list, fn) => fn(list), loadPresets())
     setPresets(next)
-    setSaveFailed(!savePresets(next))
+    setUnsaved(savePresets(next) ? [] : changes)
+    return next
   }
 
   function load(id) {
     const preset = presets.find((p) => p.id === id)
     if (!preset) return
     setActiveId(id)
-    setUpdatedFor(null)
+    setUpdatedNote(0)
     onLoad(preset.inputs)
   }
 
   function save(name) {
     const preset = makePreset(name, inputs)
-    commit((list) => [...list, preset])
-    setActiveId(preset.id)
+    // Another tab may have filled the list since this one last read it.
+    const next = commit((list) =>
+      list.length < MAX_PRESETS ? [...list, preset] : list,
+    )
+    if (next.includes(preset)) {
+      setActiveId(preset.id)
+      setUpdatedNote(0)
+    }
     setDialog(null)
   }
 
@@ -319,7 +349,7 @@ export default function SavedSetups({ inputs, onLoad }) {
         p.id === activeId ? { ...p, inputs: { ...inputs } } : p,
       ),
     )
-    setUpdatedFor(inputs)
+    setUpdatedNote((n) => n + 1)
   }
 
   function rename(name) {
@@ -342,7 +372,7 @@ export default function SavedSetups({ inputs, onLoad }) {
   }
 
   const compact = rowWidth > 0 && rowWidth < COMPACT_ROW_WIDTH
-  const status = updatedNote ? (
+  const status = updated ? (
     <StatusTag updated compact={compact} />
   ) : edited ? (
     <StatusTag compact={compact} />
@@ -358,7 +388,8 @@ export default function SavedSetups({ inputs, onLoad }) {
         <Select
           aria-label="Saved setup"
           data={presets.map((p) => ({ value: p.id, label: p.name }))}
-          value={activeId}
+          // Null once the setup is gone, or the picker keeps showing its name.
+          value={active?.id ?? null}
           // Fires even for the already-loaded setup (onChange wouldn't), so
           // picking it again throws away unsaved edits.
           onOptionSubmit={load}
@@ -455,7 +486,7 @@ export default function SavedSetups({ inputs, onLoad }) {
           You can keep {MAX_PRESETS} setups. Delete one to save another.
         </Text>
       )}
-      {saveFailed && (
+      {unsaved.length > 0 && (
         <Text size="xs" c="red.4" mt={6} role="alert">
           Couldn&apos;t save. Browser storage is unavailable or full.
         </Text>
@@ -491,13 +522,18 @@ export default function SavedSetups({ inputs, onLoad }) {
       <ResponsiveModal
         opened={dialog === 'reorder'}
         onClose={close}
+        closeOnEscape={!dragging}
         title="Reorder setups"
       >
         <Stack gap="md">
           <Text size="xs" c="dark.2">
             Drag to change the order in the Saved setup list.
           </Text>
-          <ReorderList presets={presets} onReorder={reorder} />
+          <ReorderList
+            presets={presets}
+            onReorder={reorder}
+            onDragging={setDragging}
+          />
           <Group justify="flex-end">
             <Button onClick={close}>Done</Button>
           </Group>

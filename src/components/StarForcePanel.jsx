@@ -22,7 +22,7 @@ import {
 import { formatMeso } from '@/lib/format'
 import { SF_DEFAULTS } from '@/lib/storage'
 import ScrollStatusArea from './ScrollStatusArea'
-import SavedSetups from './SavedSetups'
+import SavedSetups, { SELECT_CHEVRON } from './SavedSetups'
 
 const LEVEL_PRESETS = [150, 160, 200, 250]
 
@@ -34,24 +34,6 @@ const MODES = [
   { value: 3, title: 'Level 3', desc: '≈67% fewer booms · 2.5–3.5× cost' },
   { value: 4, title: 'Level 4', desc: 'No booms · 3–6.5× cost' },
 ]
-
-// Plain down-arrow chevron for the dropdowns (Mantine's default indicator
-// doesn't match the design).
-const SELECT_CHEVRON = (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={{ color: 'var(--mantine-color-dark-2)' }}
-  >
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-)
 
 const MVP_OPTIONS = [
   { value: 'none', label: 'None' },

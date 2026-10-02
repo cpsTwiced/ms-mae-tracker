@@ -151,22 +151,22 @@ function normalizeCharacter(c, index) {
   }
 }
 
+// Gives any entry whose id repeats an earlier one a fresh id.
+function uniqueIds(items) {
+  const seen = new Set()
+  return items.map((item) => {
+    const repeat = seen.has(item.id)
+    const id = repeat ? uid() : item.id
+    seen.add(id)
+    return repeat ? { ...item, id } : item
+  })
+}
+
 function normalize(state) {
   if (!Array.isArray(state?.characters) || state.characters.length === 0) {
     return freshState()
   }
-  const seen = new Set()
-  const characters = state.characters
-    .map(normalizeCharacter)
-    .map((character) => {
-      if (!seen.has(character.id)) {
-        seen.add(character.id)
-        return character
-      }
-      const id = uid()
-      seen.add(id)
-      return { ...character, id }
-    })
+  const characters = uniqueIds(state.characters.map(normalizeCharacter))
   const ids = characters.map((c) => c.id)
   return {
     characters,
@@ -260,10 +260,13 @@ function normalizeSfInputs(inputs) {
 
 // Splits a name into the characters a person sees, so the length cap counts
 // an emoji as one and never cuts one in half. Firefox before 125 has no
-// Segmenter; splitting by code point there still never halves an emoji.
+// Segmenter; splitting by code point there keeps simple emoji whole but can
+// separate multi-part ones (skin tones, flags, ZWJ sequences).
+let segmenter
 export function nameChars(name) {
   if (!Intl.Segmenter) return Array.from(name)
-  return Array.from(new Intl.Segmenter().segment(name), (s) => s.segment)
+  segmenter ??= new Intl.Segmenter()
+  return Array.from(segmenter.segment(name), (s) => s.segment)
 }
 
 function presetName(name) {
@@ -276,25 +279,26 @@ export function makePreset(name, inputs) {
 
 function normalizePresets(list) {
   if (!Array.isArray(list)) return []
-  const seen = new Set()
-  return list
-    .filter(isRecord)
-    .slice(0, MAX_PRESETS)
-    .map((p) => {
-      let id = idOr(p.id)
-      if (seen.has(id)) id = uid()
-      seen.add(id)
-      return {
-        id,
+  return uniqueIds(
+    list
+      .filter(isRecord)
+      .slice(0, MAX_PRESETS)
+      .map((p) => ({
+        id: idOr(p.id),
         name: presetName(stringOr(p.name)) || 'Untitled',
         inputs: normalizeSfInputs(p.inputs),
-      }
-    })
+      })),
+  )
 }
 
 export function loadPresets() {
   try {
-    return normalizePresets(JSON.parse(localStorage.getItem(PRESETS_KEY)))
+    const raw = localStorage.getItem(PRESETS_KEY)
+    const presets = normalizePresets(JSON.parse(raw))
+    // Store any repairs: a repaired id is random, so without this every read
+    // would give that setup a new id and changes to it would miss.
+    if (raw !== null && JSON.stringify(presets) !== raw) savePresets(presets)
+    return presets
   } catch {
     return []
   }

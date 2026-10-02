@@ -9,7 +9,13 @@ import {
 } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import StarForcePanel from './StarForcePanel'
-import { PRESETS_KEY, SF_DEFAULTS, makePreset } from '@/lib/storage'
+import {
+  PRESETS_KEY,
+  SF_DEFAULTS,
+  MAX_PRESETS,
+  MAX_PRESET_NAME_LENGTH,
+  makePreset,
+} from '@/lib/storage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -118,6 +124,10 @@ describe('SavedSetups', () => {
     fill('Target star', '20')
     expect(screen.queryByText('✓ Updated')).toBeNull()
     expect(screen.getByText('Edited')).toBeInTheDocument()
+    // Editing back to the saved value shows no tag at all.
+    fill('Target star', '21')
+    expect(screen.queryByText('Edited')).toBeNull()
+    expect(screen.queryByText('✓ Updated')).toBeNull()
   })
 
   it('discards edits when the loaded setup is picked again', async () => {
@@ -143,6 +153,100 @@ describe('SavedSetups', () => {
     seed(makePreset('Other tab', SF_DEFAULTS))
     await saveAs('This tab')
     expect(stored().map((p) => p.name)).toEqual(['Other tab', 'This tab'])
+  })
+
+  it('never saves past the limit when another tab filled the list', async () => {
+    const list = Array.from({ length: MAX_PRESETS }, (_, i) =>
+      makePreset(`p${i}`, SF_DEFAULTS),
+    )
+    seed(...list.slice(1))
+    renderPanel()
+    seed(...list)
+    await saveAs('One too many')
+    expect(stored().map((p) => p.name)).toEqual(list.map((p) => p.name))
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it('clears the picker when another tab deleted the loaded setup', async () => {
+    renderPanel()
+    await saveAs('Gone elsewhere')
+    fill('Target star', '21')
+    seed()
+    await menu('Update')
+    expect(stored()).toEqual([])
+    expect(picker().value).toBe('')
+    expect(screen.queryByText('✓ Updated')).toBeNull()
+    expect(screen.queryByText('Edited')).toBeNull()
+  })
+
+  it('updates a setup whose stored id had to be repaired', async () => {
+    localStorage.setItem(
+      PRESETS_KEY,
+      JSON.stringify([
+        { id: 'a', name: 'One', inputs: SF_DEFAULTS },
+        { id: 'a', name: 'Two', inputs: SF_DEFAULTS },
+      ]),
+    )
+    renderPanel()
+    fireEvent.click(picker())
+    fireEvent.click(await screen.findByRole('option', { name: /Two/ }))
+    fill('Target star', '21')
+    await menu('Update')
+    expect(stored().map((p) => p.inputs.targetRaw)).toEqual(['22', '21'])
+  })
+
+  it("keeps other tabs' setups once a failed write works again", async () => {
+    const setItem = Storage.prototype.setItem
+    let full = true
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (k, v) {
+      if (full && k === PRESETS_KEY) throw new Error('full')
+      return setItem.call(this, k, v)
+    })
+    renderPanel()
+    await saveAs('Made while full')
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    full = false
+    seed(makePreset('Other tab', SF_DEFAULTS))
+    await saveAs('After')
+    expect(stored().map((p) => p.name)).toEqual([
+      'Other tab',
+      'Made while full',
+      'After',
+    ])
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('drops the Updated note when a new setup is saved', async () => {
+    renderPanel()
+    await saveAs('First')
+    fill('Target star', '21')
+    await menu('Update')
+    expect(await screen.findByText('✓ Updated')).toBeInTheDocument()
+    await saveAs('Second')
+    expect(screen.queryByText('✓ Updated')).toBeNull()
+  })
+
+  it('keeps the Updated note when a field is re-set to the same value', async () => {
+    renderPanel()
+    await saveAs('Genesis')
+    fill('Target star', '21')
+    await menu('Update')
+    expect(await screen.findByText('✓ Updated')).toBeInTheDocument()
+    // Leaving the level field re-applies the same level.
+    fireEvent.blur(screen.getByLabelText('Item level'))
+    expect(screen.getByText('✓ Updated')).toBeInTheDocument()
+  })
+
+  it("doesn't count leading spaces toward the name limit", async () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    const name = within(await screen.findByRole('dialog')).getByLabelText(
+      'Name',
+    )
+    const full = 'x'.repeat(MAX_PRESET_NAME_LENGTH)
+    fireEvent.change(name, { target: { value: `   ${full}` } })
+    expect(name.value).toBe(full)
   })
 
   it('renames the loaded setup', async () => {
@@ -179,6 +283,29 @@ describe('SavedSetups', () => {
     expect(
       screen.getByRole('button', { name: 'Drag Second to reorder' }),
     ).toBeInTheDocument()
+  })
+
+  it('cancels a keyboard drag on Escape without closing the dialog', async () => {
+    seed(makePreset('First', SF_DEFAULTS), makePreset('Second', SF_DEFAULTS))
+    renderPanel()
+    await menu('Reorder')
+    const handle = await screen.findByRole('button', {
+      name: 'Drag First to reorder',
+    })
+    handle.focus()
+    fireEvent.keyDown(handle, { key: ' ', code: 'Space' })
+    await waitFor(() => expect(handle).toHaveAttribute('aria-pressed', 'true'))
+    fireEvent.keyDown(handle, { key: 'Escape', code: 'Escape' })
+    await waitFor(() =>
+      expect(handle).not.toHaveAttribute('aria-pressed', 'true'),
+    )
+    // A closing dialog stays mounted for its 200ms exit transition.
+    await new Promise((r) => setTimeout(r, 300))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    // With no drag in progress, Escape closes the dialog as usual.
+    fireEvent.keyDown(handle, { key: 'Escape', code: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
   it('warns when the browser refuses the write', async () => {
