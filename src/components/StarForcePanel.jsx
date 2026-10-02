@@ -719,7 +719,6 @@ export default function StarForcePanel() {
           component="span"
           size="xs"
           px="md"
-          variant="light"
           ml="auto"
           style={{ flexShrink: 0 }}
         >

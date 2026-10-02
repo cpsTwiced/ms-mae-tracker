@@ -739,9 +739,10 @@ body {
 }
 
 /* Phone results bar: pinned to the bottom while the hero cards are below the
-   screen, styled like the stat strip. The whole bar is the tap target; it
-   slides away (and goes inert) once the cards are in view. Desktop shows the
-   results beside the inputs, so it never appears there. */
+   screen, styled like the stat strip, with the primary (filled) button. The
+   whole bar is the tap target; it slides away (and goes inert) once the cards
+   are in view. Desktop shows the results beside the inputs, so it never
+   appears there. */
 .sfBar {
   position: fixed;
   left: 0;
