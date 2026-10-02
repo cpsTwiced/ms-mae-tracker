@@ -1,3 +1,13 @@
+# [1.4.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.3.0...v1.4.0) (2026-10-02)
+
+### Bug Fixes
+
+- address code review findings on saved setups ([f53b81f](https://github.com/cpsTwiced/ms-mae-tracker/commit/f53b81f2340316458b19d5024fee125ebead1d6a))
+
+### Features
+
+- add saved setups to the Star Force calculator ([ba11629](https://github.com/cpsTwiced/ms-mae-tracker/commit/ba11629f5d0d35f18cbdc8017b3f59908347d23a))
+
 # [1.3.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.2.0...v1.3.0) (2026-08-07)
 
 ### Features
