@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Button,
   Card,
   Divider,
   Group,
@@ -51,6 +52,11 @@ const RUN_OPTIONS = [
 
 // Simulation seed: fixed so the median/p90 don't jitter on every keystroke.
 const SIM_SEED = 0x5f3759df
+
+// Headroom over the phone results bar's height (67px, 84px when a wide value
+// wraps its label). The result cards count as on screen only once they clear
+// it; index.css uses the same value for the bar's scroll-padding-bottom.
+const BAR_CLEARANCE = 104
 
 function digits(value) {
   return value.replace(/\D/g, '')
@@ -121,6 +127,35 @@ export default function StarForcePanel() {
   const setEventShining = setter('eventShining')
   const setEventPlusOne = setter('eventPlusOne')
   const setRuns = setter('runs')
+
+  // On phones the results stack under a long inputs card, so a pinned bar
+  // mirrors the headline numbers while the result cards are still below the
+  // screen. Once they're on screen (or scrolled past) the bar steps aside.
+  const heroRef = useRef(null)
+  const [barVisible, setBarVisible] = useState(false)
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) =>
+        setBarVisible(
+          !entry.isIntersecting && entry.boundingClientRect.top > 0,
+        ),
+      { rootMargin: `0px 0px -${BAR_CLEARANCE}px 0px` },
+    )
+    observer.observe(heroRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  function showResults() {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    heroRef.current.scrollIntoView({
+      behavior: reduce ? 'auto' : 'smooth',
+      block: 'start',
+    })
+    // The bar goes inert as the cards arrive, so hand focus to the results
+    // instead of dropping it on the page.
+    heroRef.current.focus({ preventScroll: true })
+  }
 
   const level = levelRaw === '' ? null : Number(levelRaw)
   const cur = curRaw === '' ? null : Math.min(Number(curRaw), MAX_STAR - 1)
@@ -206,6 +241,10 @@ export default function StarForcePanel() {
       : '15–21 ★ only'
 
   const booms = run?.booms ?? 0
+  // Shared by the result cards and the phone results bar.
+  const costText = hasResult ? formatMeso(Math.round(run.cost)) : '—'
+  const boomsText = hasResult ? (booms > 0 ? booms.toFixed(1) : '0') : '—'
+  const boomsColor = booms >= 1 ? 'orange.3' : 'dark.0'
   // For gated climbs the mean boom count is tail-driven, so the helper line
   // talks about a typical run instead of anchoring on the huge average.
   const spares =
@@ -499,14 +538,14 @@ export default function StarForcePanel() {
         </Card>
 
         <div className="sfResults">
-          <div className="sfHero">
+          <div className="sfHero" ref={heroRef} tabIndex={-1}>
             <div className="sfHeroCost">
               <Text className="sfEyebrow" c="sage.2">
                 Expected cost
               </Text>
               <Group gap={8} align="baseline">
                 <Text className="sfHeroValue" c="sage.2" component="span">
-                  {hasResult ? formatMeso(Math.round(run.cost)) : '—'}
+                  {costText}
                 </Text>
                 <Text size="md" fw={600} c="sage.4" component="span">
                   mesos
@@ -523,12 +562,8 @@ export default function StarForcePanel() {
                 Expected booms
               </Text>
               <Group gap={8} align="baseline">
-                <Text
-                  className="sfHeroValue"
-                  c={booms >= 1 ? 'orange.3' : 'dark.0'}
-                  component="span"
-                >
-                  {hasResult ? (booms > 0 ? booms.toFixed(1) : '0') : '—'}
+                <Text className="sfHeroValue" c={boomsColor} component="span">
+                  {boomsText}
                 </Text>
                 {hasResult && booms > 0 && (
                   <Text size="md" fw={600} c="dark.2" component="span">
@@ -657,6 +692,39 @@ export default function StarForcePanel() {
         Rates &amp; costs: GMS v.264+ 30 ★ tables — Enhancement Mode multipliers
         community-sourced.
       </footer>
+
+      <UnstyledButton
+        className="sfBar"
+        data-visible={barVisible || undefined}
+        inert={!barVisible}
+        onClick={showResults}
+      >
+        <div>
+          <Text className="sfEyebrow" c="sage.2">
+            Expected cost
+          </Text>
+          <Text className="sfBarValue" c="sage.2">
+            {costText}
+          </Text>
+        </div>
+        <div>
+          <Text className="sfEyebrow" c="dark.2">
+            Booms
+          </Text>
+          <Text className="sfBarValue" c={boomsColor}>
+            {boomsText}
+          </Text>
+        </div>
+        <Button
+          component="span"
+          size="xs"
+          px="md"
+          ml="auto"
+          style={{ flexShrink: 0 }}
+        >
+          Full breakdown<span aria-hidden="true">&nbsp;↓</span>
+        </Button>
+      </UnstyledButton>
     </div>
   )
 }

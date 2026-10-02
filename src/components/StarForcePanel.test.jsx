@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import StarForcePanel from './StarForcePanel'
 import { expectedRun } from '@/lib/starforce'
@@ -213,6 +213,47 @@ describe('StarForcePanel', () => {
     renderPanel()
     fill('Item level', '130')
     expect(screen.getByText('a Lv.130 item caps at 20 ★')).toBeInTheDocument()
+  })
+})
+
+describe('phone results bar', () => {
+  let reportHero
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete window.IntersectionObserver
+  })
+
+  it('shows only while the result cards are below the screen', () => {
+    window.IntersectionObserver = class {
+      constructor(callback) {
+        reportHero = (entry) => act(() => callback([entry]))
+      }
+      observe() {}
+      disconnect() {}
+    }
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
+    renderPanel()
+    const bar = screen.getByRole('button', {
+      name: /full breakdown/i,
+      hidden: true,
+    })
+    expect(bar).toHaveAttribute('inert')
+
+    reportHero({ isIntersecting: false, boundingClientRect: { top: 900 } })
+    expect(bar).not.toHaveAttribute('inert')
+    const run = expectedRun(200, 0, 22, { starCatch: true, mode: 1 })
+    expect(bar).toHaveTextContent(formatMeso(Math.round(run.cost)))
+    expect(bar).toHaveTextContent(run.booms.toFixed(1))
+
+    fireEvent.click(bar)
+    expect(scrollIntoView).toHaveBeenCalled()
+    expect(document.activeElement).toHaveClass('sfHero')
+
+    reportHero({ isIntersecting: true, boundingClientRect: { top: 400 } })
+    expect(bar).toHaveAttribute('inert')
+    // Scrolled past the cards (down in the table): still out of the way.
+    reportHero({ isIntersecting: false, boundingClientRect: { top: -300 } })
+    expect(bar).toHaveAttribute('inert')
   })
 })
 
