@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Card,
+  Divider,
   Group,
   Select,
   Stack,
@@ -19,7 +20,9 @@ import {
   estimateRunQuantiles,
 } from '@/lib/starforce'
 import { formatMeso } from '@/lib/format'
+import { SF_DEFAULTS } from '@/lib/storage'
 import ScrollStatusArea from './ScrollStatusArea'
+import SavedSetups, { SELECT_CHEVRON } from './SavedSetups'
 
 const LEVEL_PRESETS = [150, 160, 200, 250]
 
@@ -31,24 +34,6 @@ const MODES = [
   { value: 3, title: 'Level 3', desc: '≈67% fewer booms · 2.5–3.5× cost' },
   { value: 4, title: 'Level 4', desc: 'No booms · 3–6.5× cost' },
 ]
-
-// Plain down-arrow chevron for the dropdowns (Mantine's default indicator
-// doesn't match the design).
-const SELECT_CHEVRON = (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={{ color: 'var(--mantine-color-dark-2)' }}
-  >
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-)
 
 const MVP_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -103,23 +88,39 @@ function pct(p) {
 
 export default function StarForcePanel() {
   // Defaults price a Lv.200 item over the full 0★ → 22★ climb so results
-  // show immediately. Everything below is plain local state — nothing
-  // persists.
-  const [levelRaw, setLevelRaw] = useState('200')
-  const [curRaw, setCurRaw] = useState('0')
-  const [targetRaw, setTargetRaw] = useState('22')
-  const [starCatch, setStarCatch] = useState(true)
-  const [safeguard, setSafeguard] = useState(false)
-  const [mode, setMode] = useState(1)
-  const [mvp, setMvp] = useState('none')
+  // show immediately. The inputs are one plain object so a saved setup can
+  // capture and restore all of them at once; they don't persist themselves.
+  //
   // Only the two events GMS currently runs (re-verified Aug 2026): Shining
   // Star Force = 30% off cost + 30% reduced destruction on ≤21★ attempts,
   // and 1+1 Star Force = +1 extra star per success on ≤10★ attempts. They
   // run independently and stack. The engine still supports the retired
   // 5/10/15★-guarantee flag, but it gets no toggle here.
-  const [eventShining, setEventShining] = useState(false)
-  const [eventPlusOne, setEventPlusOne] = useState(false)
-  const [runs, setRuns] = useState('3000')
+  const [inputs, setInputs] = useState(SF_DEFAULTS)
+  const {
+    levelRaw,
+    curRaw,
+    targetRaw,
+    starCatch,
+    safeguard,
+    mode,
+    mvp,
+    eventShining,
+    eventPlusOne,
+    runs,
+  } = inputs
+  const setter = (field) => (value) =>
+    setInputs((prev) => ({ ...prev, [field]: value }))
+  const setLevelRaw = setter('levelRaw')
+  const setCurRaw = setter('curRaw')
+  const setTargetRaw = setter('targetRaw')
+  const setStarCatch = setter('starCatch')
+  const setSafeguard = setter('safeguard')
+  const setMode = setter('mode')
+  const setMvp = setter('mvp')
+  const setEventShining = setter('eventShining')
+  const setEventPlusOne = setter('eventPlusOne')
+  const setRuns = setter('runs')
 
   const level = levelRaw === '' ? null : Number(levelRaw)
   const cur = curRaw === '' ? null : Math.min(Number(curRaw), MAX_STAR - 1)
@@ -134,12 +135,15 @@ export default function StarForcePanel() {
   // down to the new cap. Deliberately not done per keystroke: half-typed
   // levels ("1" on the way to "150") would wrongly crush the stars.
   function applyLevel(raw) {
-    setLevelRaw(raw)
     const lvl = raw === '' ? null : Number(raw)
-    if (lvl === null || lvl < 5 || lvl > 300) return
+    if (lvl === null || lvl < 5 || lvl > 300) return setLevelRaw(raw)
     const cap = maxStarForLevel(lvl)
-    setCurRaw((c) => clampRaw(c, cap))
-    setTargetRaw((t) => clampRaw(t, cap))
+    setInputs((prev) => ({
+      ...prev,
+      levelRaw: raw,
+      curRaw: clampRaw(prev.curRaw, cap),
+      targetRaw: clampRaw(prev.targetRaw, cap),
+    }))
   }
 
   const opts = useMemo(
@@ -234,6 +238,9 @@ export default function StarForcePanel() {
             <Text size="md" fw={600}>
               Inputs
             </Text>
+
+            <SavedSetups inputs={inputs} onLoad={setInputs} />
+            <Divider color="dark.5" />
 
             <div>
               <Text size="sm" fw={600} mb={7}>

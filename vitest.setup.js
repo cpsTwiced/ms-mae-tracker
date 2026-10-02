@@ -29,3 +29,6 @@ class ResizeObserver {
   disconnect() {}
 }
 window.ResizeObserver = ResizeObserver
+
+// Combobox scrolls the selected option into view when its list reopens.
+Element.prototype.scrollIntoView ??= () => {}
