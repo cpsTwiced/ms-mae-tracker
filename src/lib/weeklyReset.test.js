@@ -2,14 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   lastBossReset,
   nextBossReset,
-  lastQuestReset,
-  nextQuestReset,
-  lastEventReset,
   nextEventReset,
   lastDailyReset,
   nextDailyReset,
   lastMonthlyReset,
-  nextMonthlyReset,
 } from './weeklyReset'
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
@@ -32,29 +28,16 @@ describe('boss reset (Thursday)', () => {
   })
 })
 
-describe('quest reset (unified onto Thursday in v.264)', () => {
-  it('shares the Thursday boss reset', () => {
-    const now = new Date('2026-06-05T10:00:00Z')
-    expect(lastQuestReset(now)).toBe(lastBossReset(now))
-  })
-
-  it('next quest reset is the upcoming Thursday', () => {
-    // 2026-06-05 is a Friday; the upcoming Thursday is 2026-06-11.
-    const now = new Date('2026-06-05T10:00:00Z')
-    expect(nextQuestReset(now)).toBe(Date.UTC(2026, 5, 11))
-  })
-})
-
 describe('event reset (Wednesday)', () => {
-  it('returns todays Wednesday 00:00 UTC when it is Wednesday', () => {
+  it('is a week out once Wednesday 00:00 UTC has passed', () => {
     // 2026-06-10 is a Wednesday.
     const now = new Date('2026-06-10T05:30:00Z')
-    expect(lastEventReset(now)).toBe(Date.UTC(2026, 5, 10))
+    expect(nextEventReset(now)).toBe(Date.UTC(2026, 5, 17))
   })
 
-  it('returns the previous Wednesday before the next event reset', () => {
+  it('is the coming midnight late on a Tuesday', () => {
     const now = new Date('2026-06-09T23:59:59Z')
-    expect(lastEventReset(now)).toBe(Date.UTC(2026, 5, 3))
+    expect(nextEventReset(now)).toBe(Date.UTC(2026, 5, 10))
   })
 
   it('next event reset is the upcoming Wednesday', () => {
@@ -76,13 +59,6 @@ describe('monthly reset (Black Mage)', () => {
   it('uses the 1st of the current month at 00:00 UTC', () => {
     const now = new Date('2026-06-05T10:00:00Z')
     expect(lastMonthlyReset(now)).toBe(Date.UTC(2026, 5, 1))
-    expect(nextMonthlyReset(now)).toBe(Date.UTC(2026, 6, 1))
-  })
-
-  it('rolls December over into the next January', () => {
-    const now = new Date('2026-12-20T00:00:00Z')
-    expect(lastMonthlyReset(now)).toBe(Date.UTC(2026, 11, 1))
-    expect(nextMonthlyReset(now)).toBe(Date.UTC(2027, 0, 1))
   })
 
   it('returns the 1st even on the 1st of the month', () => {

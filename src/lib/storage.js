@@ -1,4 +1,4 @@
-import { lastBossReset, lastQuestReset, lastMonthlyReset } from './weeklyReset'
+import { lastBossReset, lastMonthlyReset } from './weeklyReset'
 import { BOSS_CONTENT } from '@/data/bossContent'
 import { WEEKLY_CONTENT } from '@/data/weeklyContent'
 import { MAX_STAR, MVP_DISCOUNTS } from '@/data/starforce'
@@ -92,7 +92,7 @@ function freshState() {
     characters: [character],
     activeId: character.id,
     bossResetAt: lastBossReset(),
-    weeklyResetAt: lastQuestReset(),
+    weeklyResetAt: lastBossReset(),
     monthlyResetAt: lastMonthlyReset(),
   }
 }
@@ -172,7 +172,7 @@ function normalize(state) {
     characters,
     activeId: ids.includes(state.activeId) ? state.activeId : ids[0],
     bossResetAt: resetAtOr(state.bossResetAt, lastBossReset()),
-    weeklyResetAt: resetAtOr(state.weeklyResetAt, lastQuestReset()),
+    weeklyResetAt: resetAtOr(state.weeklyResetAt, lastBossReset()),
     monthlyResetAt: resetAtOr(state.monthlyResetAt, lastMonthlyReset()),
   }
 }

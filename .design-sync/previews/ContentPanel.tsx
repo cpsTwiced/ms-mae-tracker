@@ -36,7 +36,6 @@ export const BossList = () => (
       items={bossItems}
       onEdit={noop}
       onToggle={noop}
-      onRemove={noop}
       onReorder={noop}
       emptyText="No boss content yet."
     />
@@ -51,7 +50,6 @@ export const WeeklyListNoAvatars = () => (
       showAvatar={false}
       onEdit={noop}
       onToggle={noop}
-      onRemove={noop}
       onReorder={noop}
       emptyText="No weekly content yet."
     />
@@ -74,7 +72,6 @@ export const GroupedSections = () => (
       ]}
       onEdit={noop}
       onToggle={noop}
-      onRemove={noop}
       onReorder={noop}
       emptyText="No boss content yet."
     />
@@ -88,7 +85,6 @@ export const EmptyState = () => (
       items={[]}
       onEdit={noop}
       onToggle={noop}
-      onRemove={noop}
       onReorder={noop}
       emptyText="No boss content yet. Use Edit to pick this week's bosses."
     />

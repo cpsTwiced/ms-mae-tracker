@@ -66,12 +66,10 @@ export const FilledPlanner = () => (
     <Tracker
       character={character}
       onToggleBoss={noop}
-      onRemoveBoss={noop}
       onReorderBoss={noop}
       onSetBossDifficulty={noop}
       onClearBosses={noop}
       onToggleWeekly={noop}
-      onRemoveWeekly={noop}
       onReorderWeekly={noop}
       onSetWeeklyContent={noop}
     />

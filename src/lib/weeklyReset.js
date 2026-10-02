@@ -28,7 +28,8 @@ export function nextDailyReset(now = new Date()) {
 
 // Weekly reset: Thursday 00:00 UTC.
 // Since GMS v.264 Nexon unified weekly bosses and weekly quests/content onto the
-// same Thursday reset, so boss, quest and weekly resets all share this boundary.
+// same Thursday reset, so boss, quest and weekly resets all share this boundary
+// (the app still tracks bossResetAt and weeklyResetAt separately).
 export function lastBossReset(now = new Date()) {
   return lastWeekdayReset(THURSDAY, now)
 }
@@ -37,22 +38,12 @@ export function nextBossReset(now = new Date()) {
 }
 
 // Event weekly reset: Wednesday 00:00 UTC.
-export function lastEventReset(now = new Date()) {
-  return lastWeekdayReset(WEDNESDAY, now)
-}
 export function nextEventReset(now = new Date()) {
   return nextWeekdayReset(WEDNESDAY, now)
 }
 
 // Monthly reset (Black Mage): 1st of the month, 00:00 UTC.
+// Applied but never counted down, so there's no next-reset helper.
 export function lastMonthlyReset(now = new Date()) {
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
 }
-export function nextMonthlyReset(now = new Date()) {
-  // Date.UTC rolls month 12 over to January of the next year.
-  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
-}
-
-// Weekly quest / dungeon reset — same Thursday 00:00 UTC since v.264.
-export const lastQuestReset = lastBossReset
-export const nextQuestReset = nextBossReset

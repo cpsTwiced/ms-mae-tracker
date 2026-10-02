@@ -9,19 +9,9 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import {
   SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
@@ -29,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities'
 import DifficultyBadge from './DifficultyBadge'
 import { initials } from '@/lib/icon'
 import ScrollStatusArea from './ScrollStatusArea'
+import { moveById, useReorderSensors } from './useReorder'
 
 // Presentational row card, shared by the live sortable row and the drag
 // overlay (the lifted copy that follows the pointer). `dragHandle` is the grab
@@ -36,10 +27,8 @@ import ScrollStatusArea from './ScrollStatusArea'
 function RowCard({
   item,
   reordering,
-  allowRemove,
   showAvatar,
   onToggle,
-  onRemove,
   dragHandle,
   cardRef,
   style,
@@ -72,28 +61,13 @@ function RowCard({
           </Text>
         </Group>
         {!reordering && (
-          <Group gap={4} wrap="nowrap">
-            <Checkbox
-              checked={item.done}
-              onChange={onToggle}
-              // Stop the row's onClick from firing too (it would double-toggle).
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`Mark ${item.name} done`}
-            />
-            {allowRemove && (
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemove()
-                }}
-                aria-label={`Remove ${item.name}`}
-              >
-                ✕
-              </ActionIcon>
-            )}
-          </Group>
+          <Checkbox
+            checked={item.done}
+            onChange={onToggle}
+            // Stop the row's onClick from firing too (it would double-toggle).
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Mark ${item.name} done`}
+          />
         )}
       </Group>
     </Card>
@@ -149,33 +123,14 @@ function Row(props) {
 
 // A draggable list of rows. One DndContext per list keeps reordering scoped to
 // that list (so sections reorder independently).
-function SortableList({
-  items,
-  reordering,
-  allowRemove,
-  showAvatar,
-  onToggle,
-  onRemove,
-  onReorder,
-}) {
+function SortableList({ items, reordering, showAvatar, onToggle, onReorder }) {
   const [activeId, setActiveId] = useState(null)
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
+  const sensors = useReorderSensors()
 
   function handleDragEnd({ active, over }) {
     setActiveId(null)
-    if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((i) => i.id === active.id)
-      const newIndex = items.findIndex((i) => i.id === over.id)
-      // Items can vanish mid-drag (e.g. a cross-tab sync replaces the list);
-      // arrayMove with -1 would silently relocate the last item.
-      if (oldIndex === -1 || newIndex === -1) return
-      onReorder(arrayMove(items, oldIndex, newIndex))
-    }
+    const next = over ? moveById(items, active.id, over.id) : items
+    if (next !== items) onReorder(next)
   }
 
   const activeItem = activeId ? items.find((i) => i.id === activeId) : null
@@ -198,10 +153,8 @@ function SortableList({
               key={i.id}
               item={i}
               reordering={reordering}
-              allowRemove={allowRemove}
               showAvatar={showAvatar}
               onToggle={() => onToggle(i.id)}
-              onRemove={() => onRemove(i.id)}
             />
           ))}
         </Stack>
@@ -214,7 +167,6 @@ function SortableList({
           <RowCard
             item={activeItem}
             reordering
-            allowRemove={allowRemove}
             showAvatar={showAvatar}
             style={{ cursor: 'grabbing' }}
             dragHandle={<DragHandle grabbing />}
@@ -228,7 +180,7 @@ function SortableList({
 // Non-sortable list, used when a panel isn't reorderable. Skips dnd-kit
 // entirely — no DndContext and no per-row useSortable — so it's both lighter
 // and simpler than mounting SortableList with reordering permanently off.
-function PlainList({ items, allowRemove, showAvatar, onToggle, onRemove }) {
+function PlainList({ items, showAvatar, onToggle }) {
   return (
     <Stack gap={4}>
       {items.map((i) => (
@@ -236,10 +188,8 @@ function PlainList({ items, allowRemove, showAvatar, onToggle, onRemove }) {
           key={i.id}
           item={i}
           reordering={false}
-          allowRemove={allowRemove}
           showAvatar={showAvatar}
           onToggle={() => onToggle(i.id)}
-          onRemove={() => onRemove(i.id)}
         />
       ))}
     </Stack>
@@ -262,14 +212,11 @@ export default function ContentPanel({
   sections,
   onEdit,
   onToggle,
-  onRemove,
   onReorder,
   emptyText,
-  allowRemove = true,
   showAvatar = true,
   reorderable = true,
   scrollable = false,
-  className,
 }) {
   const [reordering, setReordering] = useState(false)
 
@@ -289,50 +236,45 @@ export default function ContentPanel({
     onReorder(reorderWithinSection(sections, sectionKey, newSectionItems))
   }
 
-  const listProps = { reordering, allowRemove, showAvatar, onToggle, onRemove }
+  const listProps = { reordering, showAvatar, onToggle }
 
-  const cardClass = [scrollable && 'pane', className].filter(Boolean).join(' ')
-
-  const body = (
-    <>
-      {allItems.length === 0 ? (
-        <Text size="sm" c="dimmed" ta="center" py="md">
-          {emptyText}
-        </Text>
-      ) : sections ? (
-        <Stack gap="xs">
-          {sections
-            .filter((s) => s.items.length > 0)
-            .map((s) => (
-              <Stack key={s.key} gap={4}>
-                <Group justify="space-between" wrap="nowrap">
-                  <Text size="xs" fw={700} c="dimmed" tt="uppercase">
-                    {s.label}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {s.items.filter((i) => i.done).length}/{s.items.length}
-                  </Text>
-                </Group>
-                <ListComponent
-                  items={s.items}
-                  onReorder={(next) => reorderSection(s.key, next)}
-                  {...listProps}
-                />
-              </Stack>
-            ))}
-        </Stack>
-      ) : (
-        <ListComponent items={items} onReorder={onReorder} {...listProps} />
-      )}
-    </>
-  )
+  const body =
+    allItems.length === 0 ? (
+      <Text size="sm" c="dimmed" ta="center" py="md">
+        {emptyText}
+      </Text>
+    ) : sections ? (
+      <Stack gap="xs">
+        {sections
+          .filter((s) => s.items.length > 0)
+          .map((s) => (
+            <Stack key={s.key} gap={4}>
+              <Group justify="space-between" wrap="nowrap">
+                <Text size="xs" fw={700} c="dimmed" tt="uppercase">
+                  {s.label}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {s.items.filter((i) => i.done).length}/{s.items.length}
+                </Text>
+              </Group>
+              <ListComponent
+                items={s.items}
+                onReorder={(next) => reorderSection(s.key, next)}
+                {...listProps}
+              />
+            </Stack>
+          ))}
+      </Stack>
+    ) : (
+      <ListComponent items={items} onReorder={onReorder} {...listProps} />
+    )
 
   return (
     <Card
       withBorder
       radius="md"
       padding="sm"
-      className={cardClass || undefined}
+      className={scrollable ? 'pane' : undefined}
     >
       <Group justify="space-between" mb="xs" wrap="nowrap">
         <Text fw={600}>{title}</Text>

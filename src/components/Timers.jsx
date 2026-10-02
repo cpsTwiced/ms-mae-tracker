@@ -31,6 +31,31 @@ function localWindow(w, now) {
   return `${fmt(start)}–${fmt(end)}`
 }
 
+// ⓘ with a tooltip: a bold heading over a bulleted list.
+function InfoTip({ heading, items }) {
+  return (
+    <Tooltip
+      withArrow
+      label={
+        <Stack gap={2}>
+          <Text size="xs" fw={600}>
+            {heading}
+          </Text>
+          {items.map((i) => (
+            <Text key={i} size="xs">
+              • {i}
+            </Text>
+          ))}
+        </Stack>
+      }
+    >
+      <Text size="xs" c="dimmed" style={{ cursor: 'help' }}>
+        ⓘ
+      </Text>
+    </Tooltip>
+  )
+}
+
 const TIMERS = [
   {
     label: 'Daily Reset',
@@ -86,25 +111,7 @@ export default function Timers({ className }) {
               <div>
                 <Group gap={6} wrap="nowrap">
                   <Text size="sm">{t.label}</Text>
-                  <Tooltip
-                    withArrow
-                    label={
-                      <Stack gap={2}>
-                        <Text size="xs" fw={600}>
-                          {t.utc} · resets:
-                        </Text>
-                        {t.includes.map((i) => (
-                          <Text key={i} size="xs">
-                            • {i}
-                          </Text>
-                        ))}
-                      </Stack>
-                    }
-                  >
-                    <Text size="xs" c="dimmed" style={{ cursor: 'help' }}>
-                      ⓘ
-                    </Text>
-                  </Tooltip>
+                  <InfoTip heading={`${t.utc} · resets:`} items={t.includes} />
                 </Group>
                 <Text size="xs" c="dimmed">
                   {localTime(next, t.withWeekday)} your time
@@ -125,25 +132,12 @@ export default function Timers({ className }) {
                   2x now
                 </Badge>
               )}
-              <Tooltip
-                withArrow
-                label={
-                  <Stack gap={2}>
-                    <Text size="xs" fw={600}>
-                      2x mesos in Ursus, twice daily (your time):
-                    </Text>
-                    {GOLDEN_TIME_WINDOWS.map((w) => (
-                      <Text key={w.startHour} size="xs">
-                        • {localWindow(w, new Date(now))}
-                      </Text>
-                    ))}
-                  </Stack>
-                }
-              >
-                <Text size="xs" c="dimmed" style={{ cursor: 'help' }}>
-                  ⓘ
-                </Text>
-              </Tooltip>
+              <InfoTip
+                heading="2x mesos in Ursus, twice daily (your time):"
+                items={GOLDEN_TIME_WINDOWS.map((w) =>
+                  localWindow(w, new Date(now)),
+                )}
+              />
             </Group>
             <Text size="xs" c="dimmed">
               {ursus.active ? '2x mesos until' : 'next at'}{' '}

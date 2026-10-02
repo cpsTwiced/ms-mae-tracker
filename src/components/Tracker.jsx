@@ -14,12 +14,10 @@ import {
 export default function Tracker({
   character,
   onToggleBoss,
-  onRemoveBoss,
   onReorderBoss,
   onSetBossDifficulty,
   onClearBosses,
   onToggleWeekly,
-  onRemoveWeekly,
   onReorderWeekly,
   onSetWeeklyContent,
 }) {
@@ -65,10 +63,8 @@ export default function Tracker({
             sections={weeklySections}
             onEdit={() => setWeeklyOpen(true)}
             onToggle={onToggleWeekly}
-            onRemove={onRemoveWeekly}
             onReorder={onReorderWeekly}
             showAvatar={false}
-            allowRemove={false}
             reorderable={false}
             scrollable
             emptyText="No weekly content yet. Tap Edit to add tasks."
@@ -81,9 +77,7 @@ export default function Tracker({
             sections={bossSections}
             onEdit={() => setBossOpen(true)}
             onToggle={onToggleBoss}
-            onRemove={onRemoveBoss}
             onReorder={onReorderBoss}
-            allowRemove={false}
             scrollable
             emptyText="No boss content yet. Tap Edit to add bosses."
           />
