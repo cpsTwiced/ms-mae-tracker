@@ -7,6 +7,13 @@ import {
   makeBossTask,
   makeWeeklyTask,
   STORAGE_KEY,
+  loadPresets,
+  savePresets,
+  makePreset,
+  SF_DEFAULTS,
+  PRESETS_KEY,
+  MAX_PRESETS,
+  MAX_PRESET_NAME_LENGTH,
 } from './storage'
 
 beforeEach(() => {
@@ -265,5 +272,88 @@ describe('STORAGE_KEY', () => {
     expect(s.characters).toHaveLength(1)
     expect(s.characters[0].name).toBe('Main')
     expect(localStorage.getItem('maple-tracker-v2')).not.toBeNull()
+  })
+})
+
+describe('Star Force presets', () => {
+  it('loads an empty list when nothing is saved', () => {
+    expect(loadPresets()).toEqual([])
+  })
+
+  it('round-trips presets under their own key', () => {
+    const preset = makePreset('  Genesis wep 22★ ', { ...SF_DEFAULTS, mode: 3 })
+    expect(preset.name).toBe('Genesis wep 22★')
+    expect(savePresets([preset])).toBe(true)
+    expect(JSON.parse(localStorage.getItem(PRESETS_KEY))).toHaveLength(1)
+    expect(loadPresets()).toEqual([preset])
+  })
+
+  it('caps names at the max length', () => {
+    const preset = makePreset('x'.repeat(40), SF_DEFAULTS)
+    expect(preset.name).toHaveLength(MAX_PRESET_NAME_LENGTH)
+  })
+
+  it('never cuts an emoji in half at the length cap', () => {
+    const name = 'x'.repeat(MAX_PRESET_NAME_LENGTH - 1) + '🔥👍🏽'
+    expect(makePreset(name, SF_DEFAULTS).name).toBe(
+      'x'.repeat(MAX_PRESET_NAME_LENGTH - 1) + '🔥',
+    )
+  })
+
+  it('still keeps emoji whole in browsers without Intl.Segmenter', () => {
+    vi.stubGlobal('Intl', {})
+    try {
+      const name = 'x'.repeat(MAX_PRESET_NAME_LENGTH - 1) + '🔥🔥'
+      expect(makePreset(name, SF_DEFAULTS).name).toBe(
+        'x'.repeat(MAX_PRESET_NAME_LENGTH - 1) + '🔥',
+      )
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('repairs malformed entries and drops unreadable ones', () => {
+    localStorage.setItem(
+      PRESETS_KEY,
+      JSON.stringify([
+        null,
+        'junk',
+        {
+          id: 'a',
+          name: 'Ok',
+          inputs: { mode: 9, mvp: 'platinum', runs: '7' },
+        },
+        { id: 'a', name: 42, inputs: { levelRaw: '1x5', starCatch: 0 } },
+        { id: 'b', name: 'y'.repeat(40) },
+      ]),
+    )
+    const [ok, dupe, noInputs] = loadPresets()
+    expect(ok.inputs).toEqual(SF_DEFAULTS)
+    expect(dupe.id).not.toBe('a')
+    expect(dupe.name).toBe('Untitled')
+    expect(dupe.inputs.levelRaw).toBe('15')
+    expect(dupe.inputs.starCatch).toBe(false)
+    expect(noInputs.name).toHaveLength(MAX_PRESET_NAME_LENGTH)
+    expect(noInputs.inputs).toEqual(SF_DEFAULTS)
+  })
+
+  it('keeps at most the max number of presets', () => {
+    const many = Array.from({ length: MAX_PRESETS + 5 }, (_, i) =>
+      makePreset(`p${i}`, SF_DEFAULTS),
+    )
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(many))
+    expect(loadPresets()).toHaveLength(MAX_PRESETS)
+  })
+
+  it('falls back to an empty list on corrupt JSON', () => {
+    localStorage.setItem(PRESETS_KEY, '{nope')
+    expect(loadPresets()).toEqual([])
+  })
+
+  it('reports a failed write', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('full')
+    })
+    expect(savePresets([])).toBe(false)
   })
 })

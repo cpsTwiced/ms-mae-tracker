@@ -440,6 +440,92 @@ body {
   color: var(--mantine-color-sage-light-color);
 }
 
+/* Saved setups: small tags in the setup list, the Edited/Updated note in the
+   picker, and the draggable rows in the Reorder dialog. */
+.sfTag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-dark-3);
+  background: var(--mantine-color-dark-4);
+  color: var(--mantine-color-dark-0);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sfStatusTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  line-height: 1;
+  border-radius: 999px;
+  color: var(--mantine-color-sage-3);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Trim the label's box to its capital letters so flex centering lines the dot
+   up with the visible text instead of the font's extra top/bottom space. */
+.sfStatusTag > span {
+  display: block;
+  text-box: trim-both cap alphabetic;
+}
+
+.sfStatusTag:not([data-updated])::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mantine-color-sage-filled);
+}
+
+.sfStatusTag[data-updated] {
+  background: var(--mantine-color-sage-light);
+}
+
+/* Setup picker options: roomier rows with a hairline between them so
+   neighbouring setups don't run together. */
+.sfSetupOption {
+  position: relative;
+  padding: 10px;
+}
+
+.sfSetupOption[data-checked] {
+  background: var(--mantine-color-sage-light);
+}
+
+.sfSetupOption + .sfSetupOption {
+  margin-top: 5px;
+}
+
+.sfSetupOption + .sfSetupOption::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: var(--mantine-color-dark-4);
+}
+
+.sfReorderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 6px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-5);
+  background: var(--mantine-color-dark-6);
+}
+
+.sfReorderRow[data-dragging] {
+  position: relative;
+  z-index: 1;
+  border-color: var(--mantine-color-sage-filled);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
 /* Enhancement mode picker: 2×2 grid of selectable cards. */
 .sfModeGrid {
   display: grid;
