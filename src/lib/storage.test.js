@@ -14,6 +14,8 @@ import {
   PRESETS_KEY,
   MAX_PRESETS,
   MAX_PRESET_NAME_LENGTH,
+  sfInputsToQuery,
+  sfInputsFromQuery,
 } from './storage'
 
 beforeEach(() => {
@@ -357,5 +359,49 @@ describe('Star Force presets', () => {
       throw new Error('full')
     })
     expect(savePresets([])).toBe(false)
+  })
+})
+
+describe('Star Force share links', () => {
+  it('writes every input as a readable query', () => {
+    expect(sfInputsToQuery(SF_DEFAULTS)).toBe(
+      'lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000',
+    )
+  })
+
+  it('round-trips every input', () => {
+    const inputs = {
+      levelRaw: '160',
+      curRaw: '12',
+      targetRaw: '21',
+      starCatch: false,
+      safeguard: true,
+      mode: 3,
+      mvp: 'gold',
+      eventShining: true,
+      eventPlusOne: true,
+      runs: '10000',
+    }
+    expect(sfInputsFromQuery(`?${sfInputsToQuery(inputs)}`)).toEqual(inputs)
+  })
+
+  it('returns null when the link carries no usable settings', () => {
+    expect(sfInputsFromQuery('')).toBeNull()
+    expect(sfInputsFromQuery('?ref=discord')).toBeNull()
+    // A tracking tag that happens to share a param name.
+    expect(sfInputsFromQuery('?from=reddit')).toBeNull()
+    expect(sfInputsFromQuery('?lv=1.5e2&to=-25')).toBeNull()
+  })
+
+  it('falls back to defaults for missing or junk values', () => {
+    expect(
+      sfInputsFromQuery('?lv=999&to=abc&sc=maybe&mode=9&mvp=bogus&runs=7'),
+    ).toEqual({ ...SF_DEFAULTS, levelRaw: '300' })
+  })
+
+  it('ignores built-in object names as toggle values', () => {
+    expect(
+      sfInputsFromQuery('?lv=200&sg=constructor&shine=toString&sc=__proto__'),
+    ).toEqual(SF_DEFAULTS)
   })
 })

@@ -10,7 +10,9 @@ import {
   Text,
   TextInput,
   UnstyledButton,
+  VisuallyHidden,
 } from '@mantine/core'
+import { useClipboard } from '@mantine/hooks'
 import {
   expectedRun,
   simulateRuns,
@@ -20,7 +22,7 @@ import {
   estimateRunQuantiles,
 } from '@/lib/starforce'
 import { formatMeso } from '@/lib/format'
-import { SF_DEFAULTS } from '@/lib/storage'
+import { SF_DEFAULTS, sfInputsFromQuery, sfInputsToQuery } from '@/lib/storage'
 import ScrollStatusArea from './ScrollStatusArea'
 import SavedSetups, { SELECT_CHEVRON } from './SavedSetups'
 
@@ -105,7 +107,18 @@ export default function StarForcePanel() {
   // Star Force = 30% off cost + 30% reduced destruction on ≤21★ attempts,
   // and 1+1 Star Force = +1 extra star per success on ≤10★ attempts. They
   // run independently and stack.
-  const [inputs, setInputs] = useState(SF_DEFAULTS)
+  const [inputs, setInputs] = useState(
+    () => sfInputsFromQuery(window.location.search) ?? SF_DEFAULTS,
+  )
+  // A shared link fills the form once, then leaves the address bar so it
+  // never shows a stale setup after an edit. Unrelated params stay put.
+  useEffect(() => {
+    if (sfInputsFromQuery(window.location.search)) {
+      const { pathname, hash } = window.location
+      window.history.replaceState(null, '', pathname + hash)
+    }
+  }, [])
+  const clipboard = useClipboard()
   const {
     levelRaw,
     curRaw,
@@ -255,9 +268,34 @@ export default function StarForcePanel() {
           bg="dark.6"
         >
           <Stack gap={14}>
-            <Text size="md" fw={600}>
-              Inputs
-            </Text>
+            <Group justify="space-between">
+              <Text size="md" fw={600}>
+                Inputs
+              </Text>
+              <Button
+                variant="default"
+                size="xs"
+                onClick={() =>
+                  clipboard.copy(
+                    `${window.location.origin}/?${sfInputsToQuery(inputs)}`,
+                  )
+                }
+              >
+                {clipboard.copied
+                  ? '✓ Copied'
+                  : clipboard.error
+                    ? "Couldn't copy"
+                    : 'Copy link'}
+              </Button>
+              {/* Announced outside the button, so the result is read once. */}
+              <VisuallyHidden role="status">
+                {clipboard.copied
+                  ? 'Link copied'
+                  : clipboard.error
+                    ? "Couldn't copy the link"
+                    : ''}
+              </VisuallyHidden>
+            </Group>
 
             <SavedSetups inputs={inputs} onLoad={setInputs} />
             <Divider color="dark.5" />
