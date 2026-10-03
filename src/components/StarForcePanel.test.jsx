@@ -160,12 +160,10 @@ describe('StarForcePanel', () => {
     fill('Target star', '18')
     fireEvent.click(screen.getByLabelText('Shining Star Force'))
 
-    // The single toggle drives both engine flags.
     const run = expectedRun(200, 17, 18, {
       starCatch: true,
       mode: 1,
-      eventCost30: true,
-      eventBoom30: true,
+      eventShining: true,
     })
     expect(
       screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
@@ -183,8 +181,7 @@ describe('StarForcePanel', () => {
     const run = expectedRun(160, 8, 12, {
       starCatch: true,
       mode: 1,
-      eventCost30: true,
-      eventBoom30: true,
+      eventShining: true,
       eventPlusOne: true,
     })
     // 2-star jumps show in the table and the combined cost reflects all flags.

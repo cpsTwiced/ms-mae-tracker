@@ -17,7 +17,6 @@ import {
   mulberry32,
   maxStarForLevel,
   MAX_STAR,
-  SIM_MAX_EXPECTED_ATTEMPTS,
   estimateRunQuantiles,
 } from '@/lib/starforce'
 import { formatMeso } from '@/lib/format'
@@ -70,7 +69,7 @@ function clampRaw(raw, max) {
   return String(Math.min(Number(raw), max))
 }
 
-function SettingRow({ label, sub, dimmed, control }) {
+function SettingRow({ label, sub, dimmed, checked, onChange }) {
   return (
     <div className="sfRow" data-dimmed={dimmed || undefined}>
       <div>
@@ -83,7 +82,12 @@ function SettingRow({ label, sub, dimmed, control }) {
           </Text>
         )}
       </div>
-      {control}
+      <Switch
+        aria-label={label}
+        color="sage.6"
+        checked={checked}
+        onChange={(e) => onChange(e.currentTarget.checked)}
+      />
     </div>
   )
 }
@@ -100,8 +104,7 @@ export default function StarForcePanel() {
   // Only the two events GMS currently runs (re-verified Aug 2026): Shining
   // Star Force = 30% off cost + 30% reduced destruction on ≤21★ attempts,
   // and 1+1 Star Force = +1 extra star per success on ≤10★ attempts. They
-  // run independently and stack. The engine still supports the retired
-  // 5/10/15★-guarantee flag, but it gets no toggle here.
+  // run independently and stack.
   const [inputs, setInputs] = useState(SF_DEFAULTS)
   const {
     levelRaw,
@@ -115,18 +118,8 @@ export default function StarForcePanel() {
     eventPlusOne,
     runs,
   } = inputs
-  const setter = (field) => (value) =>
+  const set = (field, value) =>
     setInputs((prev) => ({ ...prev, [field]: value }))
-  const setLevelRaw = setter('levelRaw')
-  const setCurRaw = setter('curRaw')
-  const setTargetRaw = setter('targetRaw')
-  const setStarCatch = setter('starCatch')
-  const setSafeguard = setter('safeguard')
-  const setMode = setter('mode')
-  const setMvp = setter('mvp')
-  const setEventShining = setter('eventShining')
-  const setEventPlusOne = setter('eventPlusOne')
-  const setRuns = setter('runs')
 
   // On phones the results stack under a long inputs card, so a pinned bar
   // mirrors the headline numbers while the result cards are still below the
@@ -171,7 +164,7 @@ export default function StarForcePanel() {
   // levels ("1" on the way to "150") would wrongly crush the stars.
   function applyLevel(raw) {
     const lvl = raw === '' ? null : Number(raw)
-    if (lvl === null || lvl < 5 || lvl > 300) return setLevelRaw(raw)
+    if (lvl === null || lvl < 5 || lvl > 300) return set('levelRaw', raw)
     const cap = maxStarForLevel(lvl)
     setInputs((prev) => ({
       ...prev,
@@ -182,15 +175,7 @@ export default function StarForcePanel() {
   }
 
   const opts = useMemo(
-    () => ({
-      starCatch,
-      safeguard,
-      mode,
-      mvp,
-      eventCost30: eventShining,
-      eventBoom30: eventShining,
-      eventPlusOne,
-    }),
+    () => ({ starCatch, safeguard, mode, mvp, eventShining, eventPlusOne }),
     [starCatch, safeguard, mode, mvp, eventShining, eventPlusOne],
   )
 
@@ -199,26 +184,23 @@ export default function StarForcePanel() {
     [rangeValid, level, cur, target, opts],
   )
 
-  // Extreme climbs (toward 29-30★) average millions of attempts per run —
-  // simulating them would either hang the tab or, clipped, report a false
-  // median. The closed-form expectations stay exact, so only the sim skips.
-  const simGated =
-    run !== null &&
-    run.perStar.length > 0 &&
-    run.attempts > SIM_MAX_EXPECTED_ATTEMPTS
-
   const sim = useMemo(
     () =>
-      rangeValid && !simGated
+      rangeValid
         ? simulateRuns(level, cur, target, opts, {
             runs: Number(runs),
             rng: mulberry32(SIM_SEED),
           })
         : null,
-    [rangeValid, simGated, level, cur, target, opts, runs],
+    [rangeValid, level, cur, target, opts, runs],
   )
 
   const hasResult = run !== null && run.perStar.length > 0
+  // Extreme climbs (toward 29-30★) average millions of attempts per run —
+  // simulating them would either hang the tab or, clipped, report a false
+  // median, so simulateRuns refuses them. The closed-form expectations stay
+  // exact; only the sim skips.
+  const simGated = hasResult && sim === null
 
   // Analytic typical-run figures stand in for the skipped simulation, so a
   // tail-driven mean is never the only number on screen.
@@ -229,8 +211,7 @@ export default function StarForcePanel() {
   // 15-17★ (Safeguard) / 15-21★ (mode) windows re-climbs through them —
   // any target past 15★ keeps both relevant. Null stars count as "in range"
   // so nothing looks disabled while the form is still empty.
-  const safeguardDimmed = rangeValid && target <= 15
-  const modeDimmed = rangeValid && target <= 15
+  const lowTarget = rangeValid && target <= 15
   // With safeguard on and no step past 18★, every mode-eligible attempt is
   // safeguarded, so the mode has nothing left to affect.
   const modeCovered = rangeValid && safeguard && target <= 18 && cur < 18
@@ -290,21 +271,16 @@ export default function StarForcePanel() {
                   aria-label="Item level"
                   value={levelRaw}
                   onChange={(e) =>
-                    setLevelRaw(clampRaw(digits(e.currentTarget.value), 300))
+                    set(
+                      'levelRaw',
+                      clampRaw(digits(e.currentTarget.value), 300),
+                    )
                   }
                   onBlur={() => applyLevel(levelRaw)}
                   w={80}
                   size="sm"
                   inputMode="numeric"
-                  styles={{
-                    input: {
-                      height: 40,
-                      fontFamily: 'var(--mantine-font-family-monospace)',
-                      fontSize: 16,
-                      fontWeight: 600,
-                      borderColor: 'var(--mantine-color-dark-3)',
-                    },
-                  }}
+                  classNames={{ input: 'sfNumInput' }}
                 />
                 <Group gap={6}>
                   {LEVEL_PRESETS.map((preset) => (
@@ -335,7 +311,8 @@ export default function StarForcePanel() {
                     aria-label="Current star"
                     value={clampRaw(curRaw, starCap)}
                     onChange={(e) =>
-                      setCurRaw(
+                      set(
+                        'curRaw',
                         clampRaw(digits(e.currentTarget.value), starCap),
                       )
                     }
@@ -347,15 +324,7 @@ export default function StarForcePanel() {
                         ★
                       </Text>
                     }
-                    styles={{
-                      input: {
-                        height: 40,
-                        fontFamily: 'var(--mantine-font-family-monospace)',
-                        fontSize: 16,
-                        fontWeight: 600,
-                        borderColor: 'var(--mantine-color-dark-3)',
-                      },
-                    }}
+                    classNames={{ input: 'sfNumInput' }}
                   />
                 </div>
                 <Text c="dark.3" pb={10}>
@@ -369,7 +338,8 @@ export default function StarForcePanel() {
                     aria-label="Target star"
                     value={clampRaw(targetRaw, starCap)}
                     onChange={(e) =>
-                      setTargetRaw(
+                      set(
+                        'targetRaw',
                         clampRaw(digits(e.currentTarget.value), starCap),
                       )
                     }
@@ -381,16 +351,7 @@ export default function StarForcePanel() {
                         ★
                       </Text>
                     }
-                    styles={{
-                      input: {
-                        height: 40,
-                        fontFamily: 'var(--mantine-font-family-monospace)',
-                        fontSize: 16,
-                        fontWeight: 600,
-                        borderColor: 'var(--mantine-color-sage-8)',
-                        color: 'var(--mantine-color-sage-3)',
-                      },
-                    }}
+                    classNames={{ input: 'sfNumInput sfNumInputTarget' }}
                   />
                 </div>
               </Group>
@@ -404,28 +365,16 @@ export default function StarForcePanel() {
             <SettingRow
               label="Star Catch"
               sub="+5% relative success rate"
-              control={
-                <Switch
-                  aria-label="Star Catch"
-                  color="sage.6"
-                  checked={starCatch}
-                  onChange={(e) => setStarCatch(e.currentTarget.checked)}
-                />
-              }
+              checked={starCatch}
+              onChange={(v) => set('starCatch', v)}
             />
 
             <SettingRow
               label="Safeguard"
               sub="No booms up to 18 ★, triple cost"
-              dimmed={safeguardDimmed}
-              control={
-                <Switch
-                  aria-label="Safeguard"
-                  color="sage.6"
-                  checked={safeguard}
-                  onChange={(e) => setSafeguard(e.currentTarget.checked)}
-                />
-              }
+              dimmed={lowTarget}
+              checked={safeguard}
+              onChange={(v) => set('safeguard', v)}
             />
 
             <div>
@@ -439,14 +388,14 @@ export default function StarForcePanel() {
               </Group>
               <div
                 className="sfModeGrid"
-                data-disabled={modeDimmed || modeCovered || undefined}
+                data-disabled={lowTarget || modeCovered || undefined}
               >
                 {MODES.map((m) => (
                   <UnstyledButton
                     key={m.value}
                     className="sfModeCard"
                     data-active={mode === m.value || undefined}
-                    onClick={() => setMode(m.value)}
+                    onClick={() => set('mode', m.value)}
                   >
                     <Text size="sm" fw={700}>
                       {m.title}
@@ -467,7 +416,7 @@ export default function StarForcePanel() {
                 aria-label="MVP tier"
                 data={MVP_OPTIONS}
                 value={mvp}
-                onChange={(v) => setMvp(v ?? 'none')}
+                onChange={(v) => set('mvp', v ?? 'none')}
                 size="sm"
                 rightSection={SELECT_CHEVRON}
                 rightSectionPointerEvents="none"
@@ -489,7 +438,7 @@ export default function StarForcePanel() {
                 aria-label="Simulation runs"
                 data={RUN_OPTIONS}
                 value={runs}
-                onChange={(v) => setRuns(v ?? '3000')}
+                onChange={(v) => set('runs', v ?? '3000')}
                 size="sm"
                 rightSection={SELECT_CHEVRON}
                 rightSectionPointerEvents="none"
@@ -511,26 +460,14 @@ export default function StarForcePanel() {
                 <SettingRow
                   label="Shining Star Force"
                   sub="30% off cost + 30% fewer booms up to 22 ★"
-                  control={
-                    <Switch
-                      aria-label="Shining Star Force"
-                      color="sage.6"
-                      checked={eventShining}
-                      onChange={(e) => setEventShining(e.currentTarget.checked)}
-                    />
-                  }
+                  checked={eventShining}
+                  onChange={(v) => set('eventShining', v)}
                 />
                 <SettingRow
                   label="1+1 Star Force"
                   sub="+1 ★ per success · under 11 ★, caps at 12 ★"
-                  control={
-                    <Switch
-                      aria-label="1+1 Star Force"
-                      color="sage.6"
-                      checked={eventPlusOne}
-                      onChange={(e) => setEventPlusOne(e.currentTarget.checked)}
-                    />
-                  }
+                  checked={eventPlusOne}
+                  onChange={(v) => set('eventPlusOne', v)}
                 />
               </Stack>
             </div>

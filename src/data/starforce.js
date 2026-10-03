@@ -157,11 +157,6 @@ export const SAFEGUARD_SURCHARGE = 2
 export const MVP_DISCOUNTS = { none: 0, silver: 0.03, gold: 0.05, diamond: 0.1 }
 export const MVP_MAX_STAR = 16
 
-// "5/10/15★ guaranteed success" event: attempts at these stars always land.
-// Retired from the current GMS event lineup — engine support only, no UI
-// toggle.
-export const GUARANTEED_STARS = [5, 10, 15]
-
 // Shining Star Force's 30% destruction reduction applies until the item
 // reaches 22★ — i.e. attempts at 21★ and under, including 21★→22★. This
 // matches the community calculators (tadeucci, MathBro).

@@ -440,6 +440,20 @@ body {
   color: var(--mantine-color-sage-light-color);
 }
 
+/* Level / star fields: large monospace figures; the target star is tinted. */
+.sfNumInput {
+  height: 40px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 16px;
+  font-weight: 600;
+  border-color: var(--mantine-color-dark-3);
+}
+
+.sfNumInputTarget {
+  border-color: var(--mantine-color-sage-8);
+  color: var(--mantine-color-sage-3);
+}
+
 /* Saved setups: small tags in the setup list, the Edited/Updated note in the
    picker, and the draggable rows in the Reorder dialog. */
 .sfTag {
