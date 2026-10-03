@@ -22,5 +22,6 @@ export const OpenPicker = () => (
     onClose={noop}
     character={character}
     onSetContent={noop}
+    onUnselectAll={noop}
   />
 )

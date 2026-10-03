@@ -15,10 +15,13 @@ body {
 /* Single-row top bar: the Pink Bean favicon + a large "Maplet" title on the
    left with the segmented pill tabs right beside them, underlined by a
    full-width rule. */
+/* Wraps so the tabs drop under the brand on very narrow phones (<310px)
+   instead of pushing the whole page wider than the screen. */
 .appHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
   margin-bottom: var(--mantine-spacing-md);
   padding-bottom: 12px;
   border-bottom: 1px solid var(--mantine-color-dark-5);
@@ -91,18 +94,19 @@ body {
    right. On wide screens (Mantine `md`, 62em) both columns share one shorter
    height, with a hard minimum so the panes never collapse too far. Long lists
    scroll inside the panes, leaving background visible below the planner. On
-   narrow screens the columns stack and the page scrolls normally. */
+   narrow screens the panes stack (Weekly, Boss, then Timers) and the page
+   scrolls normally. */
 .plannerGrid {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-sm);
 }
 
+/* Narrow screens: the columns dissolve so their panes stack straight in the
+   grid, and Timers drops below both lists — the checklists are what people
+   open the page for. */
 .plannerCol {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mantine-spacing-sm);
-  min-width: 0;
+  display: contents;
 }
 
 @media (min-width: 62em) {
@@ -119,6 +123,10 @@ body {
   }
 
   .plannerCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mantine-spacing-sm);
+    min-width: 0;
     flex: 1 1 0;
     height: var(--planner-column-height);
     min-height: var(--planner-column-min-height);
@@ -127,11 +135,23 @@ body {
   .plannerCol > .pane {
     flex: 1 1 0;
   }
+
+  /* An empty list keeps its natural height instead of a tall blank card. */
+  .plannerCol > .pane[data-empty] {
+    flex: 0 0 auto;
+  }
 }
 
 /* Keep Timers at its natural height; only the content lists shrink/scroll. */
 .timersPane {
   flex-shrink: 0;
+  order: 1;
+}
+
+@media (min-width: 62em) {
+  .timersPane {
+    order: 0;
+  }
 }
 
 /* A content pane. On narrow screens it's a plain, naturally-sized card and the
@@ -741,6 +761,19 @@ body {
 
 .sfTable tbody tr:nth-child(odd) {
   background: rgba(255, 255, 255, 0.015);
+}
+
+/* Phones drop the two secondary columns and tighten the cell spacing so the
+   table fits down to 320px without a hidden sideways scroll. */
+@media (max-width: 48em) {
+  .sfTable .sfWideOnly {
+    display: none;
+  }
+
+  .sfTable th,
+  .sfTable td {
+    padding-inline: 10px;
+  }
 }
 
 /* Page footer: provenance caveat. */

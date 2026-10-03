@@ -8,6 +8,7 @@ export default function WeeklyEditModal({
   onClose,
   character,
   onSetContent,
+  onUnselectAll,
 }) {
   const has = (content) =>
     character.weeklyTasks.some((t) => t.key === content.id)
@@ -62,9 +63,16 @@ export default function WeeklyEditModal({
           })}
         </Stack>
       </ScrollStatusArea>
-      <Button fullWidth mt="md" onClick={onClose}>
-        Done
-      </Button>
+      <Group mt="md" grow>
+        <Button
+          variant="default"
+          onClick={onUnselectAll}
+          disabled={character.weeklyTasks.length === 0}
+        >
+          Unselect All
+        </Button>
+        <Button onClick={onClose}>Done</Button>
+      </Group>
     </ResponsiveModal>
   )
 }
