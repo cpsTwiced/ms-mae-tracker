@@ -5,6 +5,7 @@ import {
   cleanup,
   fireEvent,
   waitFor,
+  act,
 } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import App from './App'
@@ -12,6 +13,8 @@ import { STORAGE_KEY } from '@/lib/storage'
 
 beforeEach(() => {
   localStorage.clear()
+  // Most tests exercise the planner; Star Force is the home page at '/'.
+  window.history.replaceState(null, '', '/planner')
 })
 
 afterEach(() => {
@@ -47,19 +50,33 @@ describe('App', () => {
     expect(screen.getByText(/No boss content yet/i)).toBeInTheDocument()
   })
 
-  it('switches between the Planner and Star Force tabs', () => {
+  it('opens Star Force at / and keeps each tab in the URL', () => {
+    window.history.replaceState(null, '', '/')
     renderApp()
-    // Planner is the default: the calculator is not mounted.
-    expect(screen.queryByText('Enhancement table')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Star Force' }))
+    // Star Force is the home page: the planner is not mounted.
     expect(screen.getByText('Enhancement table')).toBeInTheDocument()
+    expect(screen.queryByText('Boss Content')).not.toBeInTheDocument()
+    expect(document.title).toBe('Star Force Calculator · Maplet')
+
+    // Tabs are real links, so they can be opened in a new tab or copied.
+    expect(screen.getByRole('tab', { name: 'Planner' })).toHaveAttribute(
+      'href',
+      '/planner',
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Planner' }))
+    expect(window.location.pathname).toBe('/planner')
+    expect(document.title).toBe('Planner · Maplet')
     // The inactive view is unmounted entirely (conditional render), which
     // also stops the planner's timers while the calculator is open.
-    expect(screen.queryByText('Boss Content')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Planner' }))
     expect(screen.getByText('Boss Content')).toBeInTheDocument()
+    expect(screen.queryByText('Enhancement table')).not.toBeInTheDocument()
+
+    // Back/forward navigation follows the URL.
+    act(() => {
+      window.history.replaceState(null, '', '/')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(screen.getByText('Enhancement table')).toBeInTheDocument()
   })
 
   it('adds a character and persists it', async () => {
@@ -486,6 +503,16 @@ describe('App', () => {
       name: 'Culvert',
     })
     fireEvent.click(modalCheckbox)
+    expect(
+      screen.queryByRole('checkbox', { name: 'Mark Culvert done' }),
+    ).not.toBeInTheDocument()
+
+    // Unselect All clears every weekly task at once.
+    fireEvent.click(modalCheckbox)
+    expect(modalCheckbox).toBeChecked()
+    fireEvent.click(screen.getByRole('button', { name: 'Unselect All' }))
+    expect(modalCheckbox).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Unselect All' })).toBeDisabled()
     expect(
       screen.queryByRole('checkbox', { name: 'Mark Culvert done' }),
     ).not.toBeInTheDocument()

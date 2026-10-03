@@ -117,7 +117,12 @@ export default function Timers({ className }) {
                   {localTime(next, t.withWeekday)} your time
                 </Text>
               </div>
-              <Text size="sm" c="sage" ff="monospace">
+              <Text
+                size="sm"
+                c="sage"
+                ff="monospace"
+                style={{ whiteSpace: 'nowrap' }}
+              >
                 {formatCountdown(next - now)}
               </Text>
             </Group>
@@ -148,7 +153,12 @@ export default function Timers({ className }) {
             <Text size="xs" c="dimmed">
               {ursus.active ? 'ends in' : 'starts in'}
             </Text>
-            <Text size="sm" c={ursus.active ? 'yellow' : 'sage'} ff="monospace">
+            <Text
+              size="sm"
+              c={ursus.active ? 'yellow' : 'sage'}
+              ff="monospace"
+              style={{ whiteSpace: 'nowrap' }}
+            >
               {formatCountdown(ursusTarget - now)}
             </Text>
           </div>

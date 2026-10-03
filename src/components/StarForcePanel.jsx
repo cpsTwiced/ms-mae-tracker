@@ -581,9 +581,9 @@ export default function StarForcePanel() {
                       <th>Star</th>
                       <th>Success</th>
                       <th>Boom</th>
-                      <th>Cost / attempt</th>
+                      <th className="sfWideOnly">Cost / attempt</th>
                       <th>Exp. cost</th>
-                      <th>Exp. booms</th>
+                      <th className="sfWideOnly">Exp. booms</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -602,11 +602,13 @@ export default function StarForcePanel() {
                         >
                           {row.odds.boom > 0 ? pct(row.odds.boom) : '—'}
                         </td>
-                        <td>{formatMeso(row.attemptCost)}</td>
+                        <td className="sfWideOnly">
+                          {formatMeso(row.attemptCost)}
+                        </td>
                         <td style={{ color: 'var(--mantine-color-sage-3)' }}>
                           {formatMeso(Math.round(row.expectedCost))}
                         </td>
-                        <td>
+                        <td className="sfWideOnly">
                           {row.expectedBooms > 0
                             ? row.expectedBooms.toFixed(2)
                             : '—'}

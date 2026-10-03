@@ -275,6 +275,7 @@ export default function ContentPanel({
       radius="md"
       padding="sm"
       className={scrollable ? 'pane' : undefined}
+      data-empty={allItems.length === 0 || undefined}
     >
       <Group justify="space-between" mb="xs" wrap="nowrap">
         <Text fw={600}>{title}</Text>
@@ -285,7 +286,9 @@ export default function ContentPanel({
               {doneCount}/{allItems.length}
             </Text>
           )}
-          {reorderable && allItems.length > 1 && (
+          {/* Stays up while reordering even if the list shrank (or the
+              character changed), so reorder mode can always be left. */}
+          {reorderable && (reordering || allItems.length > 1) && (
             <Button
               size="xs"
               px="md"
