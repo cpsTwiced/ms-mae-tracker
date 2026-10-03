@@ -213,6 +213,60 @@ describe('StarForcePanel', () => {
   })
 })
 
+describe('share link', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+    delete navigator.clipboard
+  })
+
+  it('fills the inputs from a shared link, then cleans the address bar', () => {
+    window.history.replaceState(null, '', '/?lv=160&from=12&to=21&sg=1')
+    renderPanel()
+    expect(screen.getByLabelText('Item level').value).toBe('160')
+    expect(screen.getByLabelText('Current star').value).toBe('12')
+    expect(screen.getByLabelText('Target star').value).toBe('21')
+    expect(screen.getByLabelText('Safeguard')).toBeChecked()
+    expect(window.location.search).toBe('')
+  })
+
+  it('leaves an address without calculator settings alone', () => {
+    window.history.replaceState(null, '', '/?ref=discord#top')
+    renderPanel()
+    expect(screen.getByLabelText('Item level').value).toBe('200')
+    expect(window.location.search).toBe('?ref=discord')
+    expect(window.location.hash).toBe('#top')
+  })
+
+  it('copies a link to the current inputs', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    renderPanel()
+    fill('Item level', '160')
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000`,
+    )
+    expect(await screen.findByText('✓ Copied')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Link copied')
+  })
+
+  it('says so when the copy fails', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => Promise.reject(new Error('denied')) },
+      configurable: true,
+    })
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(await screen.findByText("Couldn't copy")).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Couldn't copy the link",
+    )
+  })
+})
+
 describe('phone results bar', () => {
   let reportHero
   afterEach(() => {
