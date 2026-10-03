@@ -14,14 +14,13 @@ import {
 export default function Tracker({
   character,
   onToggleBoss,
-  onRemoveBoss,
   onReorderBoss,
   onSetBossDifficulty,
   onClearBosses,
   onToggleWeekly,
-  onRemoveWeekly,
   onReorderWeekly,
   onSetWeeklyContent,
+  onClearWeeklies,
 }) {
   const [bossOpen, setBossOpen] = useState(false)
   const [weeklyOpen, setWeeklyOpen] = useState(false)
@@ -54,8 +53,8 @@ export default function Tracker({
     <Stack gap="sm" mt="sm">
       {/* Two equal-height desktop columns: Timers + Weekly stacked on the left,
           Boss on the right. The content panes scroll inside a shorter shared
-          height (see index.css). On narrow screens the columns stack and the
-          page scrolls normally. */}
+          height (see index.css). On narrow screens the panes stack — Weekly,
+          Boss, then Timers — and the page scrolls normally. */}
       <div className="plannerGrid">
         <div className="plannerCol">
           <Timers className="timersPane" />
@@ -65,10 +64,8 @@ export default function Tracker({
             sections={weeklySections}
             onEdit={() => setWeeklyOpen(true)}
             onToggle={onToggleWeekly}
-            onRemove={onRemoveWeekly}
             onReorder={onReorderWeekly}
             showAvatar={false}
-            allowRemove={false}
             reorderable={false}
             scrollable
             emptyText="No weekly content yet. Tap Edit to add tasks."
@@ -81,9 +78,7 @@ export default function Tracker({
             sections={bossSections}
             onEdit={() => setBossOpen(true)}
             onToggle={onToggleBoss}
-            onRemove={onRemoveBoss}
             onReorder={onReorderBoss}
-            allowRemove={false}
             scrollable
             emptyText="No boss content yet. Tap Edit to add bosses."
           />
@@ -102,6 +97,7 @@ export default function Tracker({
         onClose={() => setWeeklyOpen(false)}
         character={character}
         onSetContent={onSetWeeklyContent}
+        onUnselectAll={onClearWeeklies}
       />
     </Stack>
   )

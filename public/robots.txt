@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://maplet.dev/sitemap.xml

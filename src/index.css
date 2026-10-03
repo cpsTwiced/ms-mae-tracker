@@ -15,10 +15,13 @@ body {
 /* Single-row top bar: the Pink Bean favicon + a large "Maplet" title on the
    left with the segmented pill tabs right beside them, underlined by a
    full-width rule. */
+/* Wraps so the tabs drop under the brand on very narrow phones (<310px)
+   instead of pushing the whole page wider than the screen. */
 .appHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
   margin-bottom: var(--mantine-spacing-md);
   padding-bottom: 12px;
   border-bottom: 1px solid var(--mantine-color-dark-5);
@@ -91,18 +94,19 @@ body {
    right. On wide screens (Mantine `md`, 62em) both columns share one shorter
    height, with a hard minimum so the panes never collapse too far. Long lists
    scroll inside the panes, leaving background visible below the planner. On
-   narrow screens the columns stack and the page scrolls normally. */
+   narrow screens the panes stack (Weekly, Boss, then Timers) and the page
+   scrolls normally. */
 .plannerGrid {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-sm);
 }
 
+/* Narrow screens: the columns dissolve so their panes stack straight in the
+   grid, and Timers drops below both lists — the checklists are what people
+   open the page for. */
 .plannerCol {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mantine-spacing-sm);
-  min-width: 0;
+  display: contents;
 }
 
 @media (min-width: 62em) {
@@ -119,6 +123,10 @@ body {
   }
 
   .plannerCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mantine-spacing-sm);
+    min-width: 0;
     flex: 1 1 0;
     height: var(--planner-column-height);
     min-height: var(--planner-column-min-height);
@@ -127,11 +135,23 @@ body {
   .plannerCol > .pane {
     flex: 1 1 0;
   }
+
+  /* An empty list keeps its natural height instead of a tall blank card. */
+  .plannerCol > .pane[data-empty] {
+    flex: 0 0 auto;
+  }
 }
 
 /* Keep Timers at its natural height; only the content lists shrink/scroll. */
 .timersPane {
   flex-shrink: 0;
+  order: 1;
+}
+
+@media (min-width: 62em) {
+  .timersPane {
+    order: 0;
+  }
 }
 
 /* A content pane. On narrow screens it's a plain, naturally-sized card and the
@@ -440,6 +460,20 @@ body {
   color: var(--mantine-color-sage-light-color);
 }
 
+/* Level / star fields: large monospace figures; the target star is tinted. */
+.sfNumInput {
+  height: 40px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 16px;
+  font-weight: 600;
+  border-color: var(--mantine-color-dark-3);
+}
+
+.sfNumInputTarget {
+  border-color: var(--mantine-color-sage-8);
+  color: var(--mantine-color-sage-3);
+}
+
 /* Saved setups: small tags in the setup list, the Edited/Updated note in the
    picker, and the draggable rows in the Reorder dialog. */
 .sfTag {
@@ -591,6 +625,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  scroll-margin-top: 16px;
 }
 
 .sfHeroCost {
@@ -728,6 +763,19 @@ body {
   background: rgba(255, 255, 255, 0.015);
 }
 
+/* Phones drop the two secondary columns and tighten the cell spacing so the
+   table fits down to 320px without a hidden sideways scroll. */
+@media (max-width: 48em) {
+  .sfTable .sfWideOnly {
+    display: none;
+  }
+
+  .sfTable th,
+  .sfTable td {
+    padding-inline: 10px;
+  }
+}
+
 /* Page footer: provenance caveat. */
 .sfFooter {
   margin-top: 28px;
@@ -735,6 +783,53 @@ body {
   border-top: 1px solid var(--mantine-color-dark-6);
   font-size: 11px;
   color: var(--mantine-color-dark-3);
+}
+
+/* Phone results bar: pinned to the bottom while the hero cards are below the
+   screen, styled like the stat strip, with the primary (filled) button. The
+   whole bar is the tap target; it slides away (and goes inert) once the cards
+   are in view. Desktop shows the results beside the inputs, so it never
+   appears there. */
+.sfBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--mantine-color-dark-7);
+  border-top: 1px solid var(--mantine-color-dark-5);
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.35);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sfBar:not([data-visible]) {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+/* Keep keyboard-focused controls from scrolling in under the visible bar
+   (matches BAR_CLEARANCE in StarForcePanel.jsx). */
+html:has(.sfBar[data-visible]) {
+  scroll-padding-bottom: 104px;
+}
+
+.sfBarValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+@media (min-width: 62em) {
+  .sfBar {
+    display: none;
+  }
 }
 
 /* --- Touch devices -------------------------------------------------------- */
@@ -761,7 +856,8 @@ body {
   .charTileHandle,
   .charAddTile,
   .sfPill,
-  .sfModeCard {
+  .sfModeCard,
+  .sfBar {
     transition: none;
   }
 }

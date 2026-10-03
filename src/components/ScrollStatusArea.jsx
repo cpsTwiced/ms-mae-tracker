@@ -4,7 +4,6 @@ import { ScrollArea } from '@mantine/core'
 export default function ScrollStatusArea({
   autosize = false,
   refreshKey,
-  viewportProps,
   scrollbars = 'y',
   ...props
 }) {
@@ -32,19 +31,15 @@ export default function ScrollStatusArea({
 
     updateScrollState()
 
-    const observer =
-      typeof window.ResizeObserver === 'function'
-        ? new window.ResizeObserver(updateScrollState)
-        : null
-
-    observer?.observe(viewport)
+    const observer = new ResizeObserver(updateScrollState)
+    observer.observe(viewport)
     if (viewport.firstElementChild) {
-      observer?.observe(viewport.firstElementChild)
+      observer.observe(viewport.firstElementChild)
     }
     window.addEventListener('resize', updateScrollState)
 
     return () => {
-      observer?.disconnect()
+      observer.disconnect()
       window.removeEventListener('resize', updateScrollState)
     }
   }, [refreshKey, trackX])
@@ -59,7 +54,6 @@ export default function ScrollStatusArea({
       scrollbars={scrollbars}
       viewportRef={viewportRef}
       viewportProps={{
-        ...viewportProps,
         'data-scroll-required': scrollRequired || undefined,
         'data-scroll-required-x': xScrollRequired || undefined,
       }}

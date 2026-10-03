@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Container, UnstyledButton } from '@mantine/core'
-import {
-  lastBossReset,
-  lastQuestReset,
-  lastMonthlyReset,
-} from '@/lib/weeklyReset'
+import { lastBossReset, lastMonthlyReset } from '@/lib/weeklyReset'
 import {
   loadState,
   saveState,
@@ -20,18 +16,29 @@ import Tracker from '@/components/Tracker'
 import CharacterBar from '@/components/CharacterBar'
 import StarForcePanel from '@/components/StarForcePanel'
 
+// Each tab has its own address so it survives a reload and can be shared.
+// Star Force is the home page; vercel.json rewrites /planner to the app.
 const TABS = [
-  { value: 'planner', label: 'Planner' },
-  { value: 'starforce', label: 'Star Force' },
+  {
+    value: 'starforce',
+    label: 'Star Force',
+    path: '/',
+    title: 'Star Force Calculator',
+  },
+  { value: 'planner', label: 'Planner', path: '/planner', title: 'Planner' },
 ]
+
+const tabFromPath = () =>
+  TABS.find((t) => t.path === window.location.pathname)?.value ?? 'starforce'
 
 export default function App() {
   const [state, setState] = useState(loadState)
   const [saveFailed, setSaveFailed] = useState(false)
-  // Which top-level tab is open. Deliberately not persisted — the planner is
-  // the home view. The inactive view is unmounted entirely, which also stops
-  // Timers' 1s tick while the calculator tab is open.
-  const [tab, setTab] = useState('planner')
+  // Which top-level tab is open, read from the URL. The inactive view is
+  // unmounted entirely, which also stops Timers' 1s tick while the calculator
+  // tab is open.
+  const [tab, setTab] = useState(tabFromPath)
+  const current = TABS.find((t) => t.value === tab)
   // Serialized form of the last state written to (or received from) storage.
   // The persist effect skips the write only when the current state matches it
   // exactly, so a local mutation that races a cross-tab sync is never swallowed
@@ -46,52 +53,53 @@ export default function App() {
   // (Black Mage) reset on the 1st, so the weekly boundary must leave them alone.
   useEffect(() => {
     function applyResets() {
-      const boss = lastBossReset()
-      const quest = lastQuestReset()
+      const week = lastBossReset()
       const month = lastMonthlyReset()
       setState((s) => {
-        let characters = s.characters
-        let bossResetAt = s.bossResetAt
-        let weeklyResetAt = s.weeklyResetAt
-        let monthlyResetAt = s.monthlyResetAt
-        let changed = false
-        if (boss > s.bossResetAt) {
-          characters = characters.map((c) => ({
+        const bosses = week > s.bossResetAt
+        const monthly = month > s.monthlyResetAt
+        const weeklies = week > s.weeklyResetAt
+        if (!bosses && !monthly && !weeklies) return s
+        return {
+          ...s,
+          characters: s.characters.map((c) => ({
             ...c,
             bossTasks: c.bossTasks.map((t) =>
-              isMonthlyBossTask(t) ? t : { ...t, done: false },
+              (isMonthlyBossTask(t) ? monthly : bosses)
+                ? { ...t, done: false }
+                : t,
             ),
-          }))
-          bossResetAt = boss
-          changed = true
+            weeklyTasks: weeklies
+              ? c.weeklyTasks.map((t) => ({ ...t, done: false }))
+              : c.weeklyTasks,
+          })),
+          bossResetAt: Math.max(s.bossResetAt, week),
+          weeklyResetAt: Math.max(s.weeklyResetAt, week),
+          monthlyResetAt: Math.max(s.monthlyResetAt, month),
         }
-        if (month > s.monthlyResetAt) {
-          characters = characters.map((c) => ({
-            ...c,
-            bossTasks: c.bossTasks.map((t) =>
-              isMonthlyBossTask(t) ? { ...t, done: false } : t,
-            ),
-          }))
-          monthlyResetAt = month
-          changed = true
-        }
-        if (quest > s.weeklyResetAt) {
-          characters = characters.map((c) => ({
-            ...c,
-            weeklyTasks: c.weeklyTasks.map((t) => ({ ...t, done: false })),
-          }))
-          weeklyResetAt = quest
-          changed = true
-        }
-        return changed
-          ? { ...s, characters, bossResetAt, weeklyResetAt, monthlyResetAt }
-          : s
       })
     }
     applyResets()
     const id = setInterval(applyResets, 60_000)
     return () => clearInterval(id)
   }, [])
+
+  // Follow the browser's back/forward buttons between tabs.
+  useEffect(() => {
+    const onPopState = () => setTab(tabFromPath())
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  useEffect(() => {
+    document.title = `${current.title} · Maplet`
+  }, [current])
+
+  function openTab(t) {
+    if (t.value === tab) return
+    window.history.pushState(null, '', t.path)
+    setTab(t.value)
+  }
 
   // Keep open tabs in sync. The storage event only fires in other tabs, and the
   // ref prevents the received state from being written straight back.
@@ -127,13 +135,6 @@ export default function App() {
   const active =
     state.characters.find((c) => c.id === state.activeId) ?? state.characters[0]
 
-  function mapActive(s, fn) {
-    return {
-      ...s,
-      characters: s.characters.map((c) => (c.id === s.activeId ? fn(c) : c)),
-    }
-  }
-
   function setActive(id) {
     setState((s) => ({ ...s, activeId: id }))
   }
@@ -168,94 +169,46 @@ export default function App() {
     setState((s) => ({ ...s, characters: newOrder }))
   }
 
-  // --- Boss tasks (active character) ---
+  // Applies `fn` to one task list ('bossTasks' | 'weeklyTasks') of the
+  // active character.
+  function updateTasks(list, fn) {
+    setState((s) => ({
+      ...s,
+      characters: s.characters.map((c) =>
+        c.id === s.activeId ? { ...c, [list]: fn(c[list]) } : c,
+      ),
+    }))
+  }
+  const toggleTask = (list) => (taskId) =>
+    updateTasks(list, (tasks) =>
+      tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)),
+    )
+  const reorderTasks = (list) => (newOrder) => updateTasks(list, () => newOrder)
+
   function setBossDifficulty(boss, diff, checked) {
-    setState((s) =>
-      mapActive(s, (c) => {
-        const key = `${boss.id}:${diff.d}`
-        if (!checked)
-          return { ...c, bossTasks: c.bossTasks.filter((t) => t.key !== key) }
-        // Only one difficulty per boss: picking a new one replaces the boss's
-        // current difficulty in place (keeping its spot in the list) instead of
-        // requiring the old one to be unchecked first.
-        const idx = c.bossTasks.findIndex((t) => t.bossId === boss.id)
-        if (idx === -1)
-          return { ...c, bossTasks: [...c.bossTasks, makeBossTask(boss, diff)] }
-        return {
-          ...c,
-          // Carry `done` over: correcting the difficulty of a boss already
-          // cleared this week shouldn't lose the checkmark.
-          bossTasks: c.bossTasks.map((t, i) =>
-            i === idx ? { ...makeBossTask(boss, diff), done: t.done } : t,
-          ),
-        }
-      }),
-    )
-  }
-  function toggleBoss(taskId) {
-    setState((s) =>
-      mapActive(s, (c) => ({
-        ...c,
-        bossTasks: c.bossTasks.map((t) =>
-          t.id === taskId ? { ...t, done: !t.done } : t,
-        ),
-      })),
-    )
-  }
-  function removeBoss(taskId) {
-    setState((s) =>
-      mapActive(s, (c) => ({
-        ...c,
-        bossTasks: c.bossTasks.filter((t) => t.id !== taskId),
-      })),
-    )
-  }
-  function reorderBoss(newOrder) {
-    setState((s) => mapActive(s, (c) => ({ ...c, bossTasks: newOrder })))
-  }
-  function clearBosses() {
-    setState((s) => mapActive(s, (c) => ({ ...c, bossTasks: [] })))
+    const key = `${boss.id}:${diff.d}`
+    updateTasks('bossTasks', (tasks) => {
+      if (!checked) return tasks.filter((t) => t.key !== key)
+      // Only one difficulty per boss: picking a new one replaces the boss's
+      // current difficulty in place (keeping its spot in the list) instead of
+      // requiring the old one to be unchecked first.
+      const idx = tasks.findIndex((t) => t.bossId === boss.id)
+      if (idx === -1) return [...tasks, makeBossTask(boss, diff)]
+      // Carry `done` over: correcting the difficulty of a boss already
+      // cleared this week shouldn't lose the checkmark.
+      return tasks.map((t, i) =>
+        i === idx ? { ...makeBossTask(boss, diff), done: t.done } : t,
+      )
+    })
   }
 
-  // --- Weekly tasks (active character) ---
   function setWeeklyContent(content, checked) {
-    setState((s) =>
-      mapActive(s, (c) => {
-        const exists = c.weeklyTasks.some((t) => t.key === content.id)
-        if (checked && !exists)
-          return {
-            ...c,
-            weeklyTasks: [...c.weeklyTasks, makeWeeklyTask(content)],
-          }
-        if (!checked && exists)
-          return {
-            ...c,
-            weeklyTasks: c.weeklyTasks.filter((t) => t.key !== content.id),
-          }
-        return c
-      }),
-    )
-  }
-  function toggleWeekly(taskId) {
-    setState((s) =>
-      mapActive(s, (c) => ({
-        ...c,
-        weeklyTasks: c.weeklyTasks.map((t) =>
-          t.id === taskId ? { ...t, done: !t.done } : t,
-        ),
-      })),
-    )
-  }
-  function removeWeekly(taskId) {
-    setState((s) =>
-      mapActive(s, (c) => ({
-        ...c,
-        weeklyTasks: c.weeklyTasks.filter((t) => t.id !== taskId),
-      })),
-    )
-  }
-  function reorderWeekly(newOrder) {
-    setState((s) => mapActive(s, (c) => ({ ...c, weeklyTasks: newOrder })))
+    updateTasks('weeklyTasks', (tasks) => {
+      const exists = tasks.some((t) => t.key === content.id)
+      if (checked && !exists) return [...tasks, makeWeeklyTask(content)]
+      if (!checked && exists) return tasks.filter((t) => t.key !== content.id)
+      return tasks
+    })
   }
 
   return (
@@ -269,11 +222,18 @@ export default function App() {
           {TABS.map((t) => (
             <UnstyledButton
               key={t.value}
+              component="a"
+              href={t.path}
               role="tab"
               aria-selected={tab === t.value}
               className="appTab"
               data-active={tab === t.value || undefined}
-              onClick={() => setTab(t.value)}
+              onClick={(e) => {
+                // Let modified clicks open a new tab/window as usual.
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                e.preventDefault()
+                openTab(t)
+              }}
             >
               {t.label}
             </UnstyledButton>
@@ -288,9 +248,7 @@ export default function App() {
         </Alert>
       )}
 
-      <h2 className="pageTitle">
-        {tab === 'planner' ? 'Planner' : 'Star Force Calculator'}
-      </h2>
+      <h2 className="pageTitle">{current.title}</h2>
 
       {tab === 'planner' ? (
         <>
@@ -306,14 +264,13 @@ export default function App() {
 
           <Tracker
             character={active}
-            onToggleBoss={toggleBoss}
-            onRemoveBoss={removeBoss}
-            onReorderBoss={reorderBoss}
+            onToggleBoss={toggleTask('bossTasks')}
+            onReorderBoss={reorderTasks('bossTasks')}
             onSetBossDifficulty={setBossDifficulty}
-            onClearBosses={clearBosses}
-            onToggleWeekly={toggleWeekly}
-            onRemoveWeekly={removeWeekly}
-            onReorderWeekly={reorderWeekly}
+            onClearBosses={() => updateTasks('bossTasks', () => [])}
+            onClearWeeklies={() => updateTasks('weeklyTasks', () => [])}
+            onToggleWeekly={toggleTask('weeklyTasks')}
+            onReorderWeekly={reorderTasks('weeklyTasks')}
             onSetWeeklyContent={setWeeklyContent}
           />
         </>

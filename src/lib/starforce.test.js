@@ -78,18 +78,12 @@ describe('attemptOdds', () => {
   })
 
   it('applies events', () => {
-    const guaranteed = attemptOdds(15, {
-      eventGuaranteed: true,
-      starCatch: true,
-    })
-    expect(guaranteed).toEqual({ success: 1, maintain: 0, boom: 0 })
-    expect(attemptOdds(14, { eventGuaranteed: true }).success).toBe(0.3)
-    expect(attemptOdds(17, { eventBoom30: true }).boom).toBeCloseTo(0.0476)
+    expect(attemptOdds(17, { eventShining: true }).boom).toBeCloseTo(0.0476)
     // The boom event covers every attempt until the item reaches 22★
     // (21★→22★ included), and stops there.
-    expect(attemptOdds(21, { eventBoom30: true }).boom).toBeCloseTo(0.08925)
-    expect(attemptOdds(20, { eventBoom30: true }).boom).toBeCloseTo(0.0735)
-    expect(attemptOdds(22, { eventBoom30: true }).boom).toBeCloseTo(0.17)
+    expect(attemptOdds(21, { eventShining: true }).boom).toBeCloseTo(0.08925)
+    expect(attemptOdds(20, { eventShining: true }).boom).toBeCloseTo(0.0735)
+    expect(attemptOdds(22, { eventShining: true }).boom).toBeCloseTo(0.17)
   })
 })
 
@@ -109,22 +103,22 @@ describe('attemptCost', () => {
     expect(attemptCost(200, 17, { mvp: 'diamond' })).toBe(attemptCost(200, 17))
   })
 
-  it('applies the 30% off event', () => {
-    expect(attemptCost(150, 0, { eventCost30: true })).toBe(
+  it('applies the Shining 30% off', () => {
+    expect(attemptCost(150, 0, { eventShining: true })).toBe(
       Math.round(136000 * 0.7),
     )
   })
 
   it('adds the safeguard surcharge on the undiscounted base', () => {
     const base = attemptCost(200, 15)
-    const discounted = attemptCost(200, 15, { eventCost30: true })
+    const discounted = attemptCost(200, 15, { eventShining: true })
     expect(attemptCost(200, 15, { safeguard: true })).toBe(base * 3)
-    expect(attemptCost(200, 15, { safeguard: true, eventCost30: true })).toBe(
+    expect(attemptCost(200, 15, { safeguard: true, eventShining: true })).toBe(
       Math.round(discounted + base * 2),
     )
     // Mode 4 at 15-17★ is priced exactly like safeguard.
-    expect(attemptCost(200, 16, { mode: 4, eventCost30: true })).toBe(
-      attemptCost(200, 16, { safeguard: true, eventCost30: true }),
+    expect(attemptCost(200, 16, { mode: 4, eventShining: true })).toBe(
+      attemptCost(200, 16, { safeguard: true, eventShining: true }),
     )
   })
 
@@ -132,7 +126,7 @@ describe('attemptCost', () => {
     expect(attemptCost(200, 18, { mode: 4 })).toBe(
       Math.round(attemptCost(200, 18) * 6.5),
     )
-    expect(attemptCost(200, 18, { mode: 4, eventCost30: true })).toBe(
+    expect(attemptCost(200, 18, { mode: 4, eventShining: true })).toBe(
       Math.round(attemptCost(200, 18) * 0.7 * 6.5),
     )
     expect(attemptCost(200, 15, { mode: 2 })).toBe(
@@ -205,8 +199,7 @@ describe('expectedRun', () => {
     const plain = expectedRun(160, 0, 17)
     const helped = expectedRun(160, 0, 17, {
       starCatch: true,
-      eventCost30: true,
-      eventGuaranteed: true,
+      eventShining: true,
       mvp: 'diamond',
     })
     expect(helped.cost).toBeLessThan(plain.cost)
