@@ -6,6 +6,7 @@ import {
   fireEvent,
   waitFor,
   act,
+  within,
 } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import App from './App'
@@ -77,6 +78,37 @@ describe('App', () => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
     expect(screen.getByText('Enhancement table')).toBeInTheDocument()
+  })
+
+  it('opens the Lab at /lab inside the Star Force tab', () => {
+    window.history.replaceState(null, '', '/lab')
+    renderApp()
+    expect(document.title).toBe('Star Force Lab · Maplet')
+    const header = screen.getByRole('tablist', { name: 'Maplet sections' })
+    expect(within(header).getAllByRole('tab')).toHaveLength(2)
+    const starForce = within(header).getByRole('tab', { name: 'Star Force' })
+    expect(starForce).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+
+    // Star Force in the header keeps you in the Lab.
+    fireEvent.click(starForce)
+    expect(window.location.pathname).toBe('/lab')
+
+    // The page's own switch goes to the Calculator, keeping the inputs.
+    fireEvent.change(screen.getByLabelText('Item level'), {
+      target: { value: '160' },
+    })
+    fireEvent.click(screen.getByRole('tab', { name: 'Calculator' }))
+    expect(window.location.pathname).toBe('/')
+    expect(document.title).toBe('Star Force Calculator · Maplet')
+    expect(screen.getByLabelText('Item level').value).toBe('160')
+
+    // Back returns to the Lab.
+    act(() => {
+      window.history.replaceState(null, '', '/lab')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
   })
 
   it('adds a character and persists it', async () => {
