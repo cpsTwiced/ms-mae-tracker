@@ -9,7 +9,7 @@ import {
 } from '@mantine/core'
 import { attemptOdds, attemptCost } from '@/lib/starforce'
 import { optimizeModes, MAX_SPARES } from '@/lib/optimizer'
-import { SF_CHANCES } from '@/lib/storage'
+import { SF_CHANCES, SF_DEFAULTS } from '@/lib/storage'
 import { formatMeso, digits, clampRaw, pct } from '@/lib/format'
 import ScrollStatusArea from './ScrollStatusArea'
 import { SELECT_CHEVRON } from './SavedSetups'
@@ -122,7 +122,7 @@ export default function StarForceLab({
                 aria-label="Chance"
                 data={CHANCE_OPTIONS}
                 value={chanceRaw}
-                onChange={(v) => onSet('chance', v ?? '90')}
+                onChange={(v) => onSet('chance', v ?? SF_DEFAULTS.chance)}
                 w={110}
                 size="sm"
                 rightSection={SELECT_CHEVRON}

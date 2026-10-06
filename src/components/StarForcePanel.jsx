@@ -321,7 +321,7 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
                 size="xs"
                 onClick={() =>
                   clipboard.copy(
-                    `${window.location.origin}${lab ? '/lab' : '/'}?${sfInputsToQuery(inputs)}`,
+                    `${window.location.origin}${VIEWS.find((v) => v.value === view).path}?${sfInputsToQuery(inputs)}`,
                   )
                 }
               >
