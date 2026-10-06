@@ -513,7 +513,7 @@ git commit -m "feat: add spares and chance to the Star Force inputs"
   - `opts`: memoized `{ starCatch, mvp, eventShining, eventPlusOne }`
   - `onSet(field, value)`: same as the panel's `set`
   - `onEditTarget()`: called when the Target box is clicked
-  - Root element: `<div className="sfResults sfLabResults">`. Tables carry `aria-label="Your plan"` / `"Every option"`.
+  - Root element: `<div className="sfResults sfLabResults">`. Tables carry `aria-label="Optimized plan"` / `"Every option"`.
 
 - [ ] **Step 1: Move the helpers** — append to `src/lib/format.js` (cut from `StarForcePanel.jsx`, unchanged):
 
@@ -601,7 +601,7 @@ describe('StarForceLab', () => {
       screen.getAllByText(formatMeso(Math.round(row.cost))).length,
     ).toBeGreaterThan(0)
     expect(screen.getAllByText(pct(row.chance)).length).toBeGreaterThan(0)
-    const plan = screen.getByRole('table', { name: 'Your plan' })
+    const plan = screen.getByRole('table', { name: 'Optimized plan' })
     expect(within(plan).getByText('15 → 16')).toBeInTheDocument()
     expect(within(plan).getAllByText('Level 4').length).toBeGreaterThan(0)
   })
@@ -901,14 +901,14 @@ export default function StarForceLab({
         <>
           <div className="sfTableCard">
             <Text size="md" fw={600} px={16} pt={14} pb={10}>
-              Your plan
+              Optimized plan
             </Text>
             <ScrollStatusArea
               className="sfTableScroll"
               refreshKey={shown}
               scrollbars="xy"
             >
-              <table className="sfTable" aria-label="Your plan">
+              <table className="sfTable" aria-label="Optimized plan">
                 <thead>
                   <tr>
                     <th>Star</th>
@@ -1183,7 +1183,9 @@ describe('Lab view', () => {
     expect(screen.queryByLabelText('Safeguard')).not.toBeInTheDocument()
     expect(screen.queryByText('Enhancement mode')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Simulation runs')).not.toBeInTheDocument()
-    expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('table', { name: 'Optimized plan' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Item level').value).toBe('160')
 
     fireEvent.click(screen.getByRole('tab', { name: 'Calculator' }))
@@ -1459,7 +1461,9 @@ it('opens the Lab at /lab inside the Star Force tab', () => {
   expect(within(header).getAllByRole('tab')).toHaveLength(2)
   const starForce = within(header).getByRole('tab', { name: 'Star Force' })
   expect(starForce).toHaveAttribute('aria-selected', 'true')
-  expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+  expect(
+    screen.getByRole('table', { name: 'Optimized plan' }),
+  ).toBeInTheDocument()
 
   // Star Force in the header keeps you in the Lab.
   fireEvent.click(starForce)
@@ -1479,7 +1483,9 @@ it('opens the Lab at /lab inside the Star Force tab', () => {
     window.history.replaceState(null, '', '/lab')
     window.dispatchEvent(new PopStateEvent('popstate'))
   })
-  expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+  expect(
+    screen.getByRole('table', { name: 'Optimized plan' }),
+  ).toBeInTheDocument()
 })
 ```
 
@@ -1583,7 +1589,7 @@ git commit -m "feat: serve the Star Force Lab at /lab"
 - [ ] **Step 1: README** — add a Features bullet after the Star Force calculator one:
 
 ```md
-- **Star Force Lab** — a **Calculator | Lab** switch at the top of the Star Force page opens the Lab ([maplet.dev/lab](https://maplet.dev/lab)), which uses the same inputs (Safeguard, Enhancement mode and simulation runs are hidden there). Enter how many **spares** you have (booms you can afford, 0–10) and the **chance** you want (at least 50/75/90/95/99%), and it finds the cheapest Enhancement Mode level for each star from 15 to 21 that reaches your target that often: the plan's expected cost and chance, a **Your plan** table (mode, success, boom and cost per attempt for each star), and an **Every option** table with the cheapest plan for every spare count from 0 to 10 plus "No limit" (click a row to see its plan). When no plan can reach your chance, it shows the best one possible. It checks every plan exactly (closed-form cost, exact chance with a limited number of booms); a plan uses one level per star and doesn't change as you use spares. Lab links and saved setups carry the spares and chance too.
+- **Star Force Lab** — a **Calculator | Lab** switch at the top of the Star Force page opens the Lab ([maplet.dev/lab](https://maplet.dev/lab)), which uses the same inputs (Safeguard, Enhancement mode and simulation runs are hidden there). Enter how many **spares** you have (booms you can afford, 0–10) and the **chance** you want (at least 50/75/90/95/99%), and it finds the cheapest Enhancement Mode level for each star from 15 to 21 that reaches your target that often: the plan's expected cost and chance, a **Optimized plan** table (mode, success, boom and cost per attempt for each star), and an **Every option** table with the cheapest plan for every spare count from 0 to 10 plus "No limit" (click a row to see its plan). When no plan can reach your chance, it shows the best one possible. It checks every plan exactly (closed-form cost, exact chance with a limited number of booms); a plan uses one level per star and doesn't change as you use spares. Lab links and saved setups carry the spares and chance too.
 ```
 
 In **Shareable pages**, mention `maplet.dev/lab`. In **Tech stack**, `vercel.json` serves the app at `/planner` and `/lab`. In **How it works**, Pages: the Lab is a view of the Star Force tab at `/lab`; add "The Lab's optimizer is `lib/optimizer.js` (pure; brute force over the 4⁷ per-star mode plans with an exact boom-limited chance DP), shown by `components/StarForceLab.jsx`." In **Status / scope**, add the Lab to what the MVP covers.

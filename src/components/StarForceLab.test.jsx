@@ -53,7 +53,7 @@ describe('StarForceLab', () => {
       screen.getAllByText(formatMeso(Math.round(row.cost))).length,
     ).toBeGreaterThan(0)
     expect(screen.getAllByText(pct(row.chance)).length).toBeGreaterThan(0)
-    const plan = screen.getByRole('table', { name: 'Your plan' })
+    const plan = screen.getByRole('table', { name: 'Optimized plan' })
     expect(within(plan).getByText('15 → 16')).toBeInTheDocument()
     expect(within(plan).getAllByText('Level 4').length).toBeGreaterThan(0)
   })

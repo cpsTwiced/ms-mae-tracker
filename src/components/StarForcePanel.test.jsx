@@ -343,7 +343,9 @@ describe('Lab view', () => {
     expect(screen.queryByLabelText('Safeguard')).not.toBeInTheDocument()
     expect(screen.queryByText('Enhancement mode')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Simulation runs')).not.toBeInTheDocument()
-    expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('table', { name: 'Optimized plan' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Item level').value).toBe('160')
 
     fireEvent.click(screen.getByRole('tab', { name: 'Calculator' }))

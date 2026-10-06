@@ -88,7 +88,9 @@ describe('App', () => {
     expect(within(header).getAllByRole('tab')).toHaveLength(2)
     const starForce = within(header).getByRole('tab', { name: 'Star Force' })
     expect(starForce).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('table', { name: 'Optimized plan' }),
+    ).toBeInTheDocument()
 
     // Star Force in the header keeps you in the Lab.
     fireEvent.click(starForce)
@@ -108,7 +110,9 @@ describe('App', () => {
       window.history.replaceState(null, '', '/lab')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(screen.getByRole('table', { name: 'Your plan' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('table', { name: 'Optimized plan' }),
+    ).toBeInTheDocument()
   })
 
   it('adds a character and persists it', async () => {

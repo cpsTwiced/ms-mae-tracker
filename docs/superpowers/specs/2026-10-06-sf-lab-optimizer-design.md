@@ -137,7 +137,7 @@ Top to bottom, matching the mockup:
      N★ Y% of the time with N spares."
    - selected row unreachable: the stats show the `best` plan's cost and chance, headed "Can't
      reach 90% with N spares. Best possible:".
-2. **Your plan** (`.sfTable`): Star (15 → 16) · Mode (Level N) · Success · Boom (— when 0) · Cost /
+2. **Optimized plan** (`.sfTable`): Star (15 → 16) · Mode (Level N) · Success · Boom (— when 0) · Cost /
    attempt, for the selected row's plan (or its `best` plan when unreachable).
 3. **Every option at Y%** (`.sfTable`): rows for spares 0–10 plus **No limit** (the `cheapest`
    plan, 100%). Columns: Spares · Chance · Exp. cost · one column per mode star with its level

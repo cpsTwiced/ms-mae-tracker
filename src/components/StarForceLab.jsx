@@ -211,14 +211,14 @@ export default function StarForceLab({
         <>
           <div className="sfTableCard">
             <Text size="md" fw={600} px={16} pt={14} pb={10}>
-              Your plan
+              Optimized plan
             </Text>
             <ScrollStatusArea
               className="sfTableScroll"
               refreshKey={shown}
               scrollbars="xy"
             >
-              <table className="sfTable" aria-label="Your plan">
+              <table className="sfTable" aria-label="Optimized plan">
                 <thead>
                   <tr>
                     <th>Star</th>
