@@ -154,7 +154,8 @@ export default function StarForceLab({
                 onClick={onEditTarget}
               >
                 {targetText}
-                <Text size="xs" c="sage.7" component="span">
+                {/* Body font, like the real field's ★ (mono shrinks it). */}
+                <Text size="xs" c="sage.7" ff="text" component="span">
                   ★
                 </Text>
               </UnstyledButton>
@@ -173,7 +174,7 @@ export default function StarForceLab({
                   possible:
                 </Text>
               )}
-              <Group gap={40} mt={16} align="flex-end">
+              <Group gap={40} mt={16} align="flex-end" style={{ rowGap: 12 }}>
                 <div>
                   <Text className="sfEyebrow" c="sage.2">
                     Expected cost

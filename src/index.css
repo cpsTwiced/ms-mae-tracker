@@ -864,9 +864,21 @@ html:has(.sfBar[data-visible]) {
 
 /* --- Star Force Lab ----------------------------------------------------- */
 
-/* Lab tables grow with their rows instead of sharing the column's height. */
+/* Lab tables grow with their rows instead of sharing the column's height,
+   and the shorter Lab inputs card keeps its own height beside them. */
 .sfLabResults .sfTableCard {
   flex: none;
+}
+
+@media (min-width: 62em) {
+  .sfLayout:has(> .sfLabResults) {
+    align-items: flex-start;
+  }
+}
+
+/* Short headers stay on one line; the per-star level columns run narrow. */
+.sfLabResults .sfTable th {
+  white-space: nowrap;
 }
 
 /* The selected spare count in the options table. */
@@ -884,6 +896,7 @@ html:has(.sfBar[data-visible]) {
 .sfTable .sfLabLevel {
   text-align: center;
   font-weight: 600;
+  padding-inline: 6px;
 }
 
 /* Level 1 is the default, so it steps back and the modes in use stand out. */
@@ -897,8 +910,9 @@ html:has(.sfBar[data-visible]) {
   color: var(--mantine-color-orange-3);
 }
 
+/* Spare-count buttons read like the table's other first-column labels. */
 .sfLabPick {
-  font-weight: 600;
+  font: inherit;
   color: inherit;
 }
 
