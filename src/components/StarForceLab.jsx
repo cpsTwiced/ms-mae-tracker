@@ -8,7 +8,8 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { attemptOdds, attemptCost } from '@/lib/starforce'
-import { optimizeModes, MAX_SPARES } from '@/lib/optimizer'
+import { optimizeModes } from '@/lib/optimizer'
+import { MAX_SPARES } from '@/data/starforce'
 import { SF_CHANCES, SF_DEFAULTS } from '@/lib/storage'
 import { formatMeso, digits, clampRaw, pct } from '@/lib/format'
 import ScrollStatusArea from './ScrollStatusArea'

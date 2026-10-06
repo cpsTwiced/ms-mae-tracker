@@ -1,8 +1,7 @@
 import { lastBossReset, lastMonthlyReset } from './weeklyReset'
-import { MAX_SPARES } from './optimizer'
 import { BOSS_CONTENT } from '@/data/bossContent'
 import { WEEKLY_CONTENT } from '@/data/weeklyContent'
-import { MAX_STAR, MVP_DISCOUNTS } from '@/data/starforce'
+import { MAX_STAR, MAX_SPARES, MVP_DISCOUNTS } from '@/data/starforce'
 
 // Namespace for the first public release. Earlier dev-only builds used other
 // keys; their data is intentionally not migrated (a clean v1 starting point).

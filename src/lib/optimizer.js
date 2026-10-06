@@ -15,8 +15,7 @@ import {
   maxStarForLevel,
   MAX_STAR,
 } from './starforce'
-
-export const MAX_SPARES = 10
+import { MAX_SPARES } from '@/data/starforce'
 
 const MODE_STARS = [15, 16, 17, 18, 19, 20, 21]
 

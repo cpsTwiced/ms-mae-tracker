@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { optimizeModes, MAX_SPARES } from './optimizer'
+import { optimizeModes } from './optimizer'
+import { MAX_SPARES } from '@/data/starforce'
 import { attemptOdds, expectedRun } from './starforce'
 
 const SC = { starCatch: true }
