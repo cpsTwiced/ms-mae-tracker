@@ -247,7 +247,7 @@ describe('share link', () => {
     fill('Item level', '160')
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     expect(writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000`,
+      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=2&ch=90`,
     )
     expect(await screen.findByText('✓ Copied')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Link copied')

@@ -1,4 +1,5 @@
 import { lastBossReset, lastMonthlyReset } from './weeklyReset'
+import { MAX_SPARES } from './optimizer'
 import { BOSS_CONTENT } from '@/data/bossContent'
 import { WEEKLY_CONTENT } from '@/data/weeklyContent'
 import { MAX_STAR, MVP_DISCOUNTS } from '@/data/starforce'
@@ -227,7 +228,12 @@ export const SF_DEFAULTS = {
   eventShining: false,
   eventPlusOne: false,
   runs: '3000',
+  spares: '2',
+  chance: '90',
 }
+
+// The Lab's "at least" chance options, as whole percents.
+export const SF_CHANCES = ['50', '75', '90', '95', '99']
 
 const SF_RUNS = ['1000', '3000', '10000', '20000']
 
@@ -255,6 +261,8 @@ function normalizeSfInputs(inputs) {
     eventShining: boolOr(i.eventShining, d.eventShining),
     eventPlusOne: boolOr(i.eventPlusOne, d.eventPlusOne),
     runs: SF_RUNS.includes(i.runs) ? i.runs : d.runs,
+    spares: digitsOr(i.spares, MAX_SPARES, d.spares),
+    chance: SF_CHANCES.includes(i.chance) ? i.chance : d.chance,
   }
 }
 
@@ -275,6 +283,8 @@ const SHARE_PARAMS = {
   shine: ['eventShining', yesNo],
   plus: ['eventPlusOne', yesNo],
   runs: ['runs', String],
+  sp: ['spares', whole],
+  ch: ['chance', String],
 }
 
 export function sfInputsToQuery(inputs) {
