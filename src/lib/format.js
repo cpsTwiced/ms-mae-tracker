@@ -30,3 +30,19 @@ export function formatCountdown(ms) {
   const seconds = total % 60
   return `${days}d ${hours}h ${minutes}m ${seconds}s`
 }
+
+export function digits(value) {
+  return value.replace(/\D/g, '')
+}
+
+// Overshooting a field snaps to its max (typing "999" in Level lands on 300,
+// a 26★ target on a Lv.100 item lands on its 8★ cap) instead of silently
+// dropping digits or accepting values the game can't reach.
+export function clampRaw(raw, max) {
+  if (raw === '') return ''
+  return String(Math.min(Number(raw), max))
+}
+
+export function pct(p) {
+  return `${(p * 100).toFixed(1)}%`
+}

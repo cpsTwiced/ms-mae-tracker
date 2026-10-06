@@ -21,7 +21,7 @@ import {
   MAX_STAR,
   estimateRunQuantiles,
 } from '@/lib/starforce'
-import { formatMeso } from '@/lib/format'
+import { formatMeso, digits, clampRaw, pct } from '@/lib/format'
 import { SF_DEFAULTS, sfInputsFromQuery, sfInputsToQuery } from '@/lib/storage'
 import ScrollStatusArea from './ScrollStatusArea'
 import SavedSetups, { SELECT_CHEVRON } from './SavedSetups'
@@ -59,18 +59,6 @@ const SIM_SEED = 0x5f3759df
 // it; index.css uses the same value for the bar's scroll-padding-bottom.
 const BAR_CLEARANCE = 104
 
-function digits(value) {
-  return value.replace(/\D/g, '')
-}
-
-// Overshooting a field snaps to its max (typing "999" in Level lands on 300,
-// a 26★ target on a Lv.100 item lands on its 8★ cap) instead of silently
-// dropping digits or accepting values the game can't reach.
-function clampRaw(raw, max) {
-  if (raw === '') return ''
-  return String(Math.min(Number(raw), max))
-}
-
 function SettingRow({ label, sub, dimmed, checked, onChange }) {
   return (
     <div className="sfRow" data-dimmed={dimmed || undefined}>
@@ -92,10 +80,6 @@ function SettingRow({ label, sub, dimmed, checked, onChange }) {
       />
     </div>
   )
-}
-
-function pct(p) {
-  return `${(p * 100).toFixed(1)}%`
 }
 
 export default function StarForcePanel() {

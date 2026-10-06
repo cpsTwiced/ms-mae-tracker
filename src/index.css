@@ -861,3 +861,66 @@ html:has(.sfBar[data-visible]) {
     transition: none;
   }
 }
+
+/* --- Star Force Lab ----------------------------------------------------- */
+
+/* Lab tables grow with their rows instead of sharing the column's height. */
+.sfLabResults .sfTableCard {
+  flex: none;
+}
+
+/* The selected spare count in the options table. */
+.sfTable tbody tr[data-selected] {
+  background: var(--mantine-color-sage-light);
+}
+
+.sfTable .sfLabMode {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  font-weight: 600;
+  color: var(--mantine-color-sage-3);
+}
+
+.sfTable .sfLabLevel {
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Level 1 is the default, so it steps back and the modes in use stand out. */
+.sfTable [data-basic] {
+  color: var(--mantine-color-dark-3);
+}
+
+.sfTable .sfLabMiss {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  color: var(--mantine-color-orange-3);
+}
+
+.sfLabPick {
+  font-weight: 600;
+  color: inherit;
+}
+
+.sfInfo {
+  display: inline-flex;
+  color: var(--mantine-color-dark-2);
+  cursor: help;
+}
+
+/* Read-only mirror of the Target star field, styled like it. */
+.sfTargetMirror {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 92px;
+  padding: 0 12px;
+  border: 1px solid var(--mantine-color-sage-8);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-dark-6);
+}
+
+/* Brief highlight when the Lab sends you to the Target star field. */
+.sfNumInput[data-flash] {
+  box-shadow: 0 0 0 3px var(--mantine-color-sage-light);
+}
