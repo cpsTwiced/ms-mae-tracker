@@ -852,6 +852,7 @@ html:has(.sfBar[data-visible]) {
    the theme (main.jsx). */
 @media (prefers-reduced-motion: reduce) {
   .appTab,
+  .sfViewTab,
   .charTile,
   .charTileHandle,
   .charAddTile,
@@ -860,4 +861,127 @@ html:has(.sfBar[data-visible]) {
   .sfBar {
     transition: none;
   }
+}
+
+/* --- Star Force Lab ----------------------------------------------------- */
+
+/* Lab tables grow with their rows instead of sharing the column's height,
+   and the shorter Lab inputs card keeps its own height beside them. */
+.sfLabResults .sfTableCard {
+  flex: none;
+}
+
+@media (min-width: 62em) {
+  .sfLayout:has(> .sfLabResults) {
+    align-items: flex-start;
+  }
+}
+
+/* Short headers stay on one line; the per-star level columns run narrow. */
+.sfLabResults .sfTable th {
+  white-space: nowrap;
+}
+
+/* The selected spare count in the options table. */
+.sfTable tbody tr[data-selected] {
+  background: var(--mantine-color-sage-light);
+}
+
+.sfTable .sfLabMode {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  font-weight: 600;
+  color: var(--mantine-color-sage-3);
+}
+
+.sfTable .sfLabLevel {
+  text-align: center;
+  font-weight: 600;
+  padding-inline: 6px;
+}
+
+/* Level 1 is the default, so it steps back and the modes in use stand out. */
+.sfTable [data-basic] {
+  color: var(--mantine-color-dark-3);
+}
+
+.sfTable .sfLabMiss {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  color: var(--mantine-color-orange-3);
+}
+
+/* Safeguard (Level 4 at 15-17★) gets its own color so it stands apart from
+   the mode levels. */
+.sfSafeguard,
+.sfTable .sfLabMode[data-safeguard] {
+  color: var(--mantine-color-blue-4);
+}
+
+/* "View ›" links under Other options. */
+.sfLabView {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: var(--mantine-color-sage-3);
+}
+
+.sfLabView:hover {
+  text-decoration: underline;
+}
+
+/* Spare-count buttons read like the table's other first-column labels. */
+.sfLabPick {
+  font: inherit;
+  color: inherit;
+}
+
+.sfInfo {
+  display: inline-flex;
+  color: var(--mantine-color-dark-2);
+  cursor: help;
+}
+
+/* Read-only mirror of the Target star field, styled like it. */
+.sfTargetMirror {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 92px;
+  padding: 0 12px;
+  border: 1px solid var(--mantine-color-sage-8);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-dark-6);
+}
+
+/* Brief highlight when the Lab sends you to the Target star field. */
+.sfNumInput[data-flash] {
+  box-shadow: 0 0 0 3px var(--mantine-color-sage-light);
+}
+
+/* Calculator | Lab switch: plain text tabs, the active one underlined, so it
+   stays quieter than the header's pill tabs. */
+.sfViewTabs {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.sfViewTab {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mantine-color-dark-2);
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.sfViewTab:hover {
+  color: var(--mantine-color-dark-0);
+}
+
+.sfViewTab[data-active] {
+  border-bottom-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-dark-0);
 }

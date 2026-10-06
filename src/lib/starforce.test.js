@@ -302,3 +302,20 @@ describe('simulateRuns', () => {
     ).not.toBeNull()
   })
 })
+
+describe('per-star modes', () => {
+  it('lets a per-star mode override the single mode', () => {
+    const opts = { mode: 1, modes: { 18: 3 } }
+    expect(attemptOdds(18, opts)).toEqual(attemptOdds(18, { mode: 3 }))
+    expect(attemptCost(200, 18, opts)).toBe(attemptCost(200, 18, { mode: 3 }))
+    // Stars missing from the plan fall back to `mode`.
+    expect(attemptOdds(19, opts)).toEqual(attemptOdds(19, { mode: 1 }))
+  })
+
+  it('prices a mixed plan star by star', () => {
+    const modes = { 15: 4, 16: 4, 17: 4, 18: 1, 19: 1, 20: 1, 21: 1 }
+    const run = expectedRun(200, 15, 18, { modes })
+    expect(run.booms).toBe(0)
+    expect(run.cost).toBeCloseTo(expectedRun(200, 15, 18, { mode: 4 }).cost, 6)
+  })
+})

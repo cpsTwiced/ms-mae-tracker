@@ -17,13 +17,22 @@ import CharacterBar from '@/components/CharacterBar'
 import StarForcePanel from '@/components/StarForcePanel'
 
 // Each tab has its own address so it survives a reload and can be shared.
-// Star Force is the home page; vercel.json rewrites /planner to the app.
+// Star Force is the home page; vercel.json rewrites /planner and /lab to the
+// app. The Lab is a view inside the Star Force page (`parent`), so it gets an
+// address but no header tab.
 const TABS = [
   {
     value: 'starforce',
     label: 'Star Force',
     path: '/',
     title: 'Star Force Calculator',
+  },
+  {
+    value: 'lab',
+    label: 'Lab',
+    path: '/lab',
+    title: 'Star Force Lab',
+    parent: 'starforce',
   },
   { value: 'planner', label: 'Planner', path: '/planner', title: 'Planner' },
 ]
@@ -39,6 +48,8 @@ export default function App() {
   // tab is open.
   const [tab, setTab] = useState(tabFromPath)
   const current = TABS.find((t) => t.value === tab)
+  // The header tab that owns the current page (the Lab lives under Star Force).
+  const section = current.parent ?? current.value
   // Serialized form of the last state written to (or received from) storage.
   // The persist effect skips the write only when the current state matches it
   // exactly, so a local mutation that races a cross-tab sync is never swallowed
@@ -95,10 +106,10 @@ export default function App() {
     document.title = `${current.title} · Maplet`
   }, [current])
 
-  function openTab(t) {
-    if (t.value === tab) return
-    window.history.pushState(null, '', t.path)
-    setTab(t.value)
+  function go(value) {
+    if (value === tab) return
+    window.history.pushState(null, '', TABS.find((t) => t.value === value).path)
+    setTab(value)
   }
 
   // Keep open tabs in sync. The storage event only fires in other tabs, and the
@@ -219,20 +230,22 @@ export default function App() {
           <h1 className="appBrandName">Maplet</h1>
         </div>
         <div className="appTabs" role="tablist" aria-label="Maplet sections">
-          {TABS.map((t) => (
+          {TABS.filter((t) => !t.parent).map((t) => (
             <UnstyledButton
               key={t.value}
               component="a"
               href={t.path}
               role="tab"
-              aria-selected={tab === t.value}
+              aria-selected={section === t.value}
               className="appTab"
-              data-active={tab === t.value || undefined}
+              data-active={section === t.value || undefined}
               onClick={(e) => {
                 // Let modified clicks open a new tab/window as usual.
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
                 e.preventDefault()
-                openTab(t)
+                // Clicking the section you're in (Star Force from the Lab)
+                // keeps you where you are.
+                if (t.value !== section) go(t.value)
               }}
             >
               {t.label}
@@ -275,7 +288,12 @@ export default function App() {
           />
         </>
       ) : (
-        <StarForcePanel />
+        // One element for both views, so switching never remounts the panel
+        // and the inputs survive.
+        <StarForcePanel
+          view={tab === 'lab' ? 'lab' : 'calculator'}
+          onViewChange={(v) => go(v === 'lab' ? 'lab' : 'starforce')}
+        />
       )}
     </Container>
   )

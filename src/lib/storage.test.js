@@ -365,7 +365,7 @@ describe('Star Force presets', () => {
 describe('Star Force share links', () => {
   it('writes every input as a readable query', () => {
     expect(sfInputsToQuery(SF_DEFAULTS)).toBe(
-      'lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000',
+      'lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90',
     )
   })
 
@@ -381,6 +381,8 @@ describe('Star Force share links', () => {
       eventShining: true,
       eventPlusOne: true,
       runs: '10000',
+      spares: '7',
+      chance: '95',
     }
     expect(sfInputsFromQuery(`?${sfInputsToQuery(inputs)}`)).toEqual(inputs)
   })
@@ -395,8 +397,17 @@ describe('Star Force share links', () => {
 
   it('falls back to defaults for missing or junk values', () => {
     expect(
-      sfInputsFromQuery('?lv=999&to=abc&sc=maybe&mode=9&mvp=bogus&runs=7'),
+      sfInputsFromQuery(
+        '?lv=999&to=abc&sc=maybe&mode=9&mvp=bogus&runs=7&sp=x&ch=42',
+      ),
     ).toEqual({ ...SF_DEFAULTS, levelRaw: '300' })
+  })
+
+  it('clamps spares to the Lab maximum', () => {
+    expect(sfInputsFromQuery('?sp=99')).toEqual({
+      ...SF_DEFAULTS,
+      spares: '50',
+    })
   })
 
   it('ignores built-in object names as toggle values', () => {

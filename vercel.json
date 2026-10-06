@@ -9,5 +9,8 @@
     },
     { "source": "/starforce", "destination": "/", "permanent": true }
   ],
-  "rewrites": [{ "source": "/planner", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/planner", "destination": "/index.html" },
+    { "source": "/lab", "destination": "/index.html" }
+  ]
 }
