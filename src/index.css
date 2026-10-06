@@ -924,3 +924,9 @@ html:has(.sfBar[data-visible]) {
 .sfNumInput[data-flash] {
   box-shadow: 0 0 0 3px var(--mantine-color-sage-light);
 }
+
+/* Calculator | Lab switch: the header's pill tabs, sized to their labels. */
+.sfViewTabs {
+  width: fit-content;
+  margin-bottom: 14px;
+}
