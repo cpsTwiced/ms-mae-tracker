@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { optimizeModes } from './optimizer'
+import { optimizeModes, reachChances } from './optimizer'
 import { MAX_SPARES } from '@/data/starforce'
 import { attemptOdds, expectedRun } from './starforce'
 
@@ -79,10 +79,26 @@ describe('optimizeModes', () => {
 
   it('marks rows no plan can reach and keeps the best plan', () => {
     const { rows } = optimizeModes(200, 0, 25, SC, 0.9)
-    expect(rows.every((row) => row.unreachable)).toBe(true)
-    const last = rows[MAX_SPARES]
-    expect(last.best.modes).toEqual(ALL(4))
-    expect(last.best.chance).toBeCloseTo(0.528, 2)
+    expect(rows.slice(0, 11).every((row) => row.unreachable)).toBe(true)
+    expect(rows[10].best.modes).toEqual(ALL(4))
+    expect(rows[10].best.chance).toBeCloseTo(0.528, 2)
+    // Enough spares get there eventually.
+    expect(rows[MAX_SPARES].unreachable).toBeUndefined()
+  })
+
+  it('stops searching once the cheapest plan meets the chance', () => {
+    const r = optimizeModes(200, 0, 22, SC, 0.5)
+    const k = r.enough
+    expect(r.cheapest.chanceBySpares[k]).toBeGreaterThanOrEqual(0.5)
+    expect(r.cheapest.chanceBySpares[k - 1]).toBeLessThan(0.5)
+    for (const row of r.rows.slice(k)) {
+      expect(row.modes).toEqual(r.cheapest.modes)
+      expect(row.cost).toBe(r.cheapest.cost)
+      expect(row.chance).toBe(r.cheapest.chanceBySpares[row.spares])
+    }
+    expect(r.rows).toHaveLength(MAX_SPARES + 1)
+    // A target the cheapest plan never reaches often enough searches all.
+    expect(optimizeModes(200, 0, 25, SC, 0.9).enough).toBeNull()
   })
 
   it('ignores Safeguard and the calculator-wide mode', () => {
@@ -95,5 +111,19 @@ describe('optimizeModes', () => {
       0.9,
     )
     expect(leaky).toEqual(plain)
+  })
+})
+
+describe('reachChances', () => {
+  it('matches the optimizer at the target and never rises with height', () => {
+    const r = optimizeModes(200, 0, 22, SC, 0.9)
+    const row = r.rows[2]
+    const reach = reachChances(0, 22, SC, row.modes, 2)
+    expect(reach[22]).toBeCloseTo(row.chance, 12)
+    // No booms below 15★, so every star up to 15 is certain.
+    expect(reach[15]).toBe(1)
+    for (let s = 16; s <= 22; s++) {
+      expect(reach[s]).toBeLessThanOrEqual(reach[s - 1] + 1e-12)
+    }
   })
 })

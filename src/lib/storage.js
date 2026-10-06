@@ -227,7 +227,7 @@ export const SF_DEFAULTS = {
   eventShining: false,
   eventPlusOne: false,
   runs: '3000',
-  spares: '2',
+  spares: '',
   chance: '90',
 }
 

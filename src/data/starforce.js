@@ -22,7 +22,7 @@
 export const MAX_STAR = 30
 
 // Most spare items the Star Force Lab plans for.
-export const MAX_SPARES = 10
+export const MAX_SPARES = 50
 
 // Highest star by equip level. Lv.138+ equips go to the 30★ cap.
 const STAR_CAPS = [

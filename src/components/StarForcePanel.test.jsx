@@ -249,7 +249,7 @@ describe('share link', () => {
     fill('Item level', '160')
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     expect(writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=2&ch=90`,
+      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
     )
     expect(await screen.findByText('✓ Copied')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Link copied')
@@ -340,7 +340,9 @@ describe('Lab view', () => {
     renderHarness()
     fill('Item level', '160')
     fireEvent.click(screen.getByRole('tab', { name: 'Lab' }))
-    expect(screen.queryByLabelText('Safeguard')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Safeguard', { selector: 'input' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('Enhancement mode')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Simulation runs')).not.toBeInTheDocument()
     expect(
@@ -395,7 +397,7 @@ describe('Lab view', () => {
     renderHarness('lab')
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     expect(writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/lab?lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=2&ch=90`,
+      `${window.location.origin}/lab?lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
     )
   })
 

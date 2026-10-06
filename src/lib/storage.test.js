@@ -365,7 +365,7 @@ describe('Star Force presets', () => {
 describe('Star Force share links', () => {
   it('writes every input as a readable query', () => {
     expect(sfInputsToQuery(SF_DEFAULTS)).toBe(
-      'lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=2&ch=90',
+      'lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90',
     )
   })
 
@@ -406,7 +406,7 @@ describe('Star Force share links', () => {
   it('clamps spares to the Lab maximum', () => {
     expect(sfInputsFromQuery('?sp=99')).toEqual({
       ...SF_DEFAULTS,
-      spares: '10',
+      spares: '50',
     })
   })
 

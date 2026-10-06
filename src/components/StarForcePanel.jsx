@@ -277,11 +277,7 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
 
   return (
     <div>
-      <div
-        className="appTabs sfViewTabs"
-        role="tablist"
-        aria-label="Star Force views"
-      >
+      <div className="sfViewTabs" role="tablist" aria-label="Star Force views">
         {VIEWS.map((v) => (
           <UnstyledButton
             key={v.value}
@@ -289,7 +285,7 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
             href={v.path}
             role="tab"
             aria-selected={view === v.value}
-            className="appTab"
+            className="sfViewTab"
             data-active={view === v.value || undefined}
             onClick={(e) => {
               // Let modified clicks open a new tab/window as usual.
@@ -302,6 +298,18 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
           </UnstyledButton>
         ))}
       </div>
+      {lab && (
+        <div style={{ marginTop: -4, marginBottom: 14 }}>
+          <Text size="sm" c="dark.1">
+            Finds the cheapest Enhancement Mode for each star (15–21 ★) that
+            reaches your target with the spares and chance you pick. It also
+            tells you how many spares to bring.
+          </Text>
+          <Text size="sm" c="orange.3" role="note" mt={4}>
+            ⚠ Experimental: results are estimates and may change.
+          </Text>
+        </div>
+      )}
 
       <div className="sfLayout">
         <Card

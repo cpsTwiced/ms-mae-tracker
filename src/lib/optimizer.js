@@ -2,7 +2,8 @@
 // Enhancement Mode levels on stars 15-21 (at most 4^7 = 16,384 plans),
 // computes each plan's expected cost and its chance of reaching the target
 // with at most N booms, and keeps, per spare count, the cheapest plan that
-// meets the wanted chance.
+// meets the wanted chance. Spare counts past the point where the cheapest
+// plan overall already meets the chance aren't searched: they all pick it.
 //
 // A plan is one level per star, keyed by star ({ 15: 4, 16: 3, … }), and
 // doesn't change as spares run out.
@@ -27,8 +28,8 @@ const EPS = 1e-9
 // eventPlusOne). Safeguard is forced off: Level 4 at 15-17★ already is
 // Safeguard. `chance` is a fraction (0.9). Returns null when there's no climb
 // (from ≥ target once the target is clamped to the level's cap).
-// ponytail: main-thread brute force (~20-30 ms); move to a Web Worker if
-// phones lag.
+// ponytail: main-thread brute force (~20-60 ms at 22 ★, ~100 ms when no spare
+// count up to 50 is enough); move to a Web Worker if phones lag.
 export function optimizeModes(level, fromStar, toStar, opts, chance) {
   const target = Math.min(toStar, maxStarForLevel(level), MAX_STAR)
   const from = Math.max(0, Math.min(fromStar, target))
@@ -53,21 +54,17 @@ export function optimizeModes(level, fromStar, toStar, opts, chance) {
   }
 
   const pick = table.map((levels) => levels[0])
-  const e = new Float64Array(target)
-  let P = new Float64Array(target)
-  let prev = new Float64Array(target)
-  const hit = []
-  const best = []
-  let cheapest = null
-
-  for (let i = 0; i < 4 ** stars.length; i++) {
+  const setPick = (i) => {
     for (let j = 0, x = i; j < stars.length; j++, x >>= 2) {
       pick[stars[j]] = table[stars[j]][x & 3]
     }
+  }
+  const e = new Float64Array(target)
 
-    // Expected cost: the same recurrence as expectedRun. The re-climb is
-    // summed directly (not via prefix sums) so plans that differ only on
-    // stars they never reach tie exactly, and the tie-break keeps Level 1.
+  // Expected cost: the same recurrence as expectedRun. The re-climb is summed
+  // directly (not via prefix sums) so plans that differ only on stars they
+  // never reach tie exactly, and the tie-break keeps Level 1.
+  const costOfPick = () => {
     for (let s = 0; s < target; s++) {
       const t = pick[s]
       let reclimb = 0
@@ -76,25 +73,42 @@ export function optimizeModes(level, fromStar, toStar, opts, chance) {
     }
     let cost = 0
     for (let s = from; s < target; s += step[s]) cost += e[s]
+    return cost
+  }
 
-    // P[s] = chance to reach the target from s with at most k booms left,
-    // solved one k at a time; `prev` holds k − 1 (a boom spends one).
-    const chances = []
-    for (let k = 0; k <= MAX_SPARES; k++) {
-      for (let s = target - 1; s >= 0; s--) {
-        const t = pick[s]
-        const next = s + step[s]
-        const up = next >= target ? 1 : P[next]
-        const down = k > 0 && t.b > 0 ? prev[reset[s]] : 0
-        P[s] = (t.p * up + t.b * down) / (t.p + t.b)
-      }
-      chances.push(P[from])
-      ;[prev, P] = [P, prev]
-    }
+  const P = new Float64Array(target)
+  const prev = new Float64Array(target)
+  const chancesOfPick = (maxK) =>
+    chancesBySpares(pick, reset, step, from, target, maxK, P, prev)
 
+  // Pass 1: every plan's cost, and the cheapest plan overall.
+  const n = 4 ** stars.length
+  const costs = new Float64Array(n)
+  let cheapestI = 0
+  for (let i = 0; i < n; i++) {
+    setPick(i)
+    costs[i] = costOfPick()
+    if (costs[i] < costs[cheapestI]) cheapestI = i
+  }
+  setPick(cheapestI)
+  const cheapChances = chancesOfPick(MAX_SPARES)
+
+  // Once the cheapest plan meets the chance, every larger spare count picks
+  // it too, so the search stops there (`enough`; null if it never does).
+  const found = cheapChances.findIndex((c) => c >= chance - EPS)
+  const enough = found === -1 ? null : found
+  const maxK = enough ?? MAX_SPARES
+
+  // Pass 2: per spare count, the cheapest plan that meets the chance, and the
+  // likeliest plan for counts none can meet.
+  const hit = []
+  const best = []
+  for (let i = 0; i < n; i++) {
+    setPick(i)
+    const chances = chancesOfPick(maxK)
+    const cost = costs[i]
     const plan = { i, cost, chances }
-    if (!cheapest || cost < cheapest.cost) cheapest = plan
-    for (let k = 0; k <= MAX_SPARES; k++) {
+    for (let k = 0; k <= maxK; k++) {
       const c = chances[k]
       if (c >= chance - EPS && (!hit[k] || cost < hit[k].cost)) hit[k] = plan
       const b = best[k]?.chances[k]
@@ -111,13 +125,17 @@ export function optimizeModes(level, fromStar, toStar, opts, chance) {
     Object.fromEntries(stars.map((s, j) => [s, ((i >> (2 * j)) & 3) + 1]))
   const rows = []
   for (let k = 0; k <= MAX_SPARES; k++) {
+    const plan =
+      k > maxK
+        ? { i: cheapestI, cost: costs[cheapestI], chances: cheapChances }
+        : hit[k]
     rows.push(
-      hit[k]
+      plan
         ? {
             spares: k,
-            chance: hit[k].chances[k],
-            cost: hit[k].cost,
-            modes: modesOf(hit[k].i),
+            chance: plan.chances[k],
+            cost: plan.cost,
+            modes: modesOf(plan.i),
           }
         : {
             spares: k,
@@ -134,10 +152,64 @@ export function optimizeModes(level, fromStar, toStar, opts, chance) {
     target,
     stars,
     rows,
+    enough,
     cheapest: {
-      cost: cheapest.cost,
-      modes: modesOf(cheapest.i),
-      chanceBySpares: cheapest.chances,
+      cost: costs[cheapestI],
+      modes: modesOf(cheapestI),
+      chanceBySpares: cheapChances,
     },
   }
+}
+
+// Chance of reaching each star from `from` up to `target` with at most
+// `spares` booms, for one fixed plan ({ 15: 4, … }). The same recurrence as
+// the search, run once per goal star: the climb is identical until it first
+// gets there. `target` must already be clamped (optimizeModes' `target`).
+export function reachChances(from, target, opts, modes, spares) {
+  const o = { ...opts, safeguard: false, modes }
+  const pick = []
+  const reset = []
+  const step = []
+  for (let s = 0; s < target; s++) {
+    const { success, boom } = attemptOdds(s, o)
+    pick[s] = { p: success, b: boom }
+    reset[s] = boomResetStar(s)
+    step[s] = successStep(s, opts)
+  }
+  const P = new Float64Array(target)
+  const prev = new Float64Array(target)
+  const out = {}
+  for (let goal = from + 1; goal <= target; goal++) {
+    out[goal] = chancesBySpares(
+      pick,
+      reset,
+      step,
+      from,
+      goal,
+      spares,
+      P,
+      prev,
+    ).at(-1)
+  }
+  return out
+}
+
+// P[s] = chance to reach `target` from s with at most k booms left, solved
+// one k at a time; `prev` holds k − 1 (a boom spends one). Returns the chance
+// from `from` for k = 0…maxK. P and prev are scratch buffers (≥ target long)
+// so the search doesn't allocate per plan.
+function chancesBySpares(pick, reset, step, from, target, maxK, P, prev) {
+  const chances = []
+  for (let k = 0; k <= maxK; k++) {
+    for (let s = target - 1; s >= 0; s--) {
+      const t = pick[s]
+      const next = s + step[s]
+      const up = next >= target ? 1 : P[next]
+      const down = k > 0 && t.b > 0 ? prev[reset[s]] : 0
+      P[s] = (t.p * up + t.b * down) / (t.p + t.b)
+    }
+    chances.push(P[from])
+    ;[prev, P] = [P, prev]
+  }
+  return chances
 }
