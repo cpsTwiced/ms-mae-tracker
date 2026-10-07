@@ -1,3 +1,19 @@
+# [1.5.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.4.0...v1.5.0) (2026-10-07)
+
+### Bug Fixes
+
+- address code review findings on the phone results bar ([b02f5eb](https://github.com/cpsTwiced/ms-mae-tracker/commit/b02f5eb91c825609c43f47fba267466468e5848a))
+
+### Features
+
+- add phone results bar to the Star Force calculator ([f9200e7](https://github.com/cpsTwiced/ms-mae-tracker/commit/f9200e72fe2983cdfbb52877981e8b743c832dae))
+- add phone results bar to the Star Force calculator ([f1dc503](https://github.com/cpsTwiced/ms-mae-tracker/commit/f1dc50357f3c2a53e30d494093a9c51e472ee3e1))
+- add the Star Force Lab (Enhancement Mode optimizer) ([#23](https://github.com/cpsTwiced/ms-mae-tracker/issues/23)) ([c8cabc1](https://github.com/cpsTwiced/ms-mae-tracker/commit/c8cabc17110d5039ad15d45c475e3945aa2779bc))
+- make Star Force the home page with shareable URLs ([8eee40e](https://github.com/cpsTwiced/ms-mae-tracker/commit/8eee40e66f329a26cc532e54e4a893c76b7e75e5))
+- make Star Force the home page with shareable URLs ([2e70b15](https://github.com/cpsTwiced/ms-mae-tracker/commit/2e70b156b57fb857005656f9a3259fe351ef5030))
+- share a Star Force setup as a link ([452146e](https://github.com/cpsTwiced/ms-mae-tracker/commit/452146ea554c68382284cec8f066e8e4fa529104))
+- share a Star Force setup as a link ([764f963](https://github.com/cpsTwiced/ms-mae-tracker/commit/764f96317b13a8e29dad95a79de592348c248acb)), closes [#anchors](https://github.com/cpsTwiced/ms-mae-tracker/issues/anchors)
+
 # [1.4.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.3.0...v1.4.0) (2026-10-02)
 
 ### Bug Fixes
