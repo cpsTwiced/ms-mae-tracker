@@ -128,16 +128,16 @@ function simulate(from, goal, opts, modes, spares, runs, seed) {
   return ok / runs
 }
 
-// [level, from, to, opts]: plain, Star Catch + MVP, Shining, both events,
+// [level, from, to, opts]: plain, MVP, Shining, both events,
 // climbs starting inside and above the mode stars, and a short climb.
 const SCENARIOS = [
-  [200, 0, 22, { starCatch: true }],
-  [200, 0, 22, { starCatch: true, mvp: 'diamond', eventShining: true }],
+  [200, 0, 22, {}],
+  [200, 0, 22, { mvp: 'diamond', eventShining: true }],
   [150, 0, 22, { eventPlusOne: true, eventShining: true }],
-  [200, 18, 22, { starCatch: true }],
+  [200, 18, 22, {}],
   [200, 22, 24, {}],
-  [250, 0, 25, { starCatch: true }],
-  [200, 0, 19, { starCatch: true, mvp: 'gold' }],
+  [250, 0, 25, {}],
+  [200, 0, 19, { mvp: 'gold' }],
 ]
 const CHANCES = [0.5, 0.9, 0.99]
 
@@ -228,7 +228,7 @@ describe('optimizer deep verification', () => {
     }, 120000)
 
   it('matches a dice-roll simulation', () => {
-    const SC = { starCatch: true }
+    const OPTS = {}
     for (const [from, to, k] of [
       [0, 22, 2],
       [15, 22, 0],
@@ -236,10 +236,10 @@ describe('optimizer deep verification', () => {
       [0, 22, 10],
       [20, 23, 3],
     ]) {
-      const r = optimizeModes(200, from, to, SC, 0.75)
+      const r = optimizeModes(200, from, to, OPTS, 0.75)
       const row = r.rows[k].unreachable ? r.rows[k].best : r.rows[k]
       const runs = 100000
-      const sim = simulate(from, r.target, SC, row.modes, k, runs, 12345 + k)
+      const sim = simulate(from, r.target, OPTS, row.modes, k, runs, 12345 + k)
       const se = Math.sqrt((row.chance * (1 - row.chance)) / runs)
       expect(Math.abs(sim - row.chance)).toBeLessThan(4 * se + 1e-6)
     }

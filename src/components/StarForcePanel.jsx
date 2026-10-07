@@ -115,7 +115,6 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
     levelRaw,
     curRaw,
     targetRaw,
-    starCatch,
     safeguard,
     mode,
     mvp,
@@ -199,14 +198,14 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
   }
 
   const opts = useMemo(
-    () => ({ starCatch, safeguard, mode, mvp, eventShining, eventPlusOne }),
-    [starCatch, safeguard, mode, mvp, eventShining, eventPlusOne],
+    () => ({ safeguard, mode, mvp, eventShining, eventPlusOne }),
+    [safeguard, mode, mvp, eventShining, eventPlusOne],
   )
 
   // What the Lab exposes; Safeguard and the single mode stay out of it.
   const labOpts = useMemo(
-    () => ({ starCatch, mvp, eventShining, eventPlusOne }),
-    [starCatch, mvp, eventShining, eventPlusOne],
+    () => ({ mvp, eventShining, eventPlusOne }),
+    [mvp, eventShining, eventPlusOne],
   )
 
   // Calculator-only work is skipped in the Lab.
@@ -452,13 +451,6 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
                 </Text>
               )}
             </div>
-
-            <SettingRow
-              label="Star Catch"
-              sub="+5% relative success rate"
-              checked={starCatch}
-              onChange={(v) => set('starCatch', v)}
-            />
 
             {/* The Lab picks modes itself, so these stay calculator-only. */}
             {!lab && (
@@ -749,8 +741,9 @@ export default function StarForcePanel({ view = 'calculator', onViewChange }) {
       </div>
 
       <footer className="sfFooter">
-        Rates &amp; costs: GMS v.264+ 30 ★ tables — Enhancement Mode multipliers
-        community-sourced.
+        Rates &amp; costs: GMS v.264+ 30 ★ tables, with the permanent +5%
+        relative success from v.271 (which retired Star Catch) — Enhancement
+        Mode multipliers community-sourced.
       </footer>
 
       {!lab && (

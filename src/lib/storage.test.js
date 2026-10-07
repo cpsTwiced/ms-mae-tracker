@@ -325,7 +325,7 @@ describe('Star Force presets', () => {
           name: 'Ok',
           inputs: { mode: 9, mvp: 'platinum', runs: '7' },
         },
-        { id: 'a', name: 42, inputs: { levelRaw: '1x5', starCatch: 0 } },
+        { id: 'a', name: 42, inputs: { levelRaw: '1x5' } },
         { id: 'b', name: 'y'.repeat(40) },
       ]),
     )
@@ -334,7 +334,6 @@ describe('Star Force presets', () => {
     expect(dupe.id).not.toBe('a')
     expect(dupe.name).toBe('Untitled')
     expect(dupe.inputs.levelRaw).toBe('15')
-    expect(dupe.inputs.starCatch).toBe(false)
     expect(noInputs.name).toHaveLength(MAX_PRESET_NAME_LENGTH)
     expect(noInputs.inputs).toEqual(SF_DEFAULTS)
     // The repaired id was stored, so the next read agrees on it.
@@ -365,7 +364,7 @@ describe('Star Force presets', () => {
 describe('Star Force share links', () => {
   it('writes every input as a readable query', () => {
     expect(sfInputsToQuery(SF_DEFAULTS)).toBe(
-      'lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90',
+      'lv=200&from=0&to=22&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90',
     )
   })
 
@@ -374,7 +373,6 @@ describe('Star Force share links', () => {
       levelRaw: '160',
       curRaw: '12',
       targetRaw: '21',
-      starCatch: false,
       safeguard: true,
       mode: 3,
       mvp: 'gold',
@@ -397,9 +395,7 @@ describe('Star Force share links', () => {
 
   it('falls back to defaults for missing or junk values', () => {
     expect(
-      sfInputsFromQuery(
-        '?lv=999&to=abc&sc=maybe&mode=9&mvp=bogus&runs=7&sp=x&ch=42',
-      ),
+      sfInputsFromQuery('?lv=999&to=abc&mode=9&mvp=bogus&runs=7&sp=x&ch=42'),
     ).toEqual({ ...SF_DEFAULTS, levelRaw: '300' })
   })
 
@@ -411,8 +407,8 @@ describe('Star Force share links', () => {
   })
 
   it('ignores built-in object names as toggle values', () => {
-    expect(
-      sfInputsFromQuery('?lv=200&sg=constructor&shine=toString&sc=__proto__'),
-    ).toEqual(SF_DEFAULTS)
+    expect(sfInputsFromQuery('?lv=200&sg=constructor&shine=toString')).toEqual(
+      SF_DEFAULTS,
+    )
   })
 })

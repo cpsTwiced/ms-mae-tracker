@@ -169,6 +169,7 @@ export const BOOM_EVENT_MAX_STAR = 21
 // which naturally caps the boost at 12★.
 export const PLUS_ONE_MAX_STAR = 10
 
-// Star Catch minigame: success ×1.05, the gain drawn proportionally from the
+// Former Star Catch bonus, permanent on every attempt since GMS v.271 removed
+// the minigame: success ×1.05, the gain drawn proportionally from the
 // remaining maintain/boom mass.
 export const STAR_CATCH_MULT = 1.05
