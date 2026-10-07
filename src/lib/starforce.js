@@ -7,11 +7,11 @@
 //   starCatch  bool    Star Catch minigame on every attempt
 //   safeguard  bool    Safeguard on 15-17★ attempts (boom 0, +200% base cost)
 //   mode       1-4     Enhancement Mode for 15-21★ attempts (default 1)
+//   modes      object  per-star override of `mode`, keyed by star ({ 18: 3 })
 //   mvp        string  'none' | 'silver' | 'gold' | 'diamond'
-//   eventCost30      bool   30% off enhancement cost
-//   eventBoom30      bool   30% reduced boom chance (attempts at ≤21★)
-//   eventGuaranteed  bool   5/10/15★ attempts always succeed
-//   eventPlusOne     bool   +1 extra star per success on attempts at ≤10★
+//   eventShining  bool  Shining Star Force: 30% off enhancement cost and 30%
+//                       reduced boom chance (attempts at ≤21★)
+//   eventPlusOne  bool  +1 extra star per success on attempts at ≤10★
 
 import {
   SF_RATES,
@@ -23,7 +23,6 @@ import {
   SAFEGUARD_SURCHARGE,
   MVP_DISCOUNTS,
   MVP_MAX_STAR,
-  GUARANTEED_STARS,
   BOOM_EVENT_MAX_STAR,
   PLUS_ONE_MAX_STAR,
   STAR_CATCH_MULT,
@@ -37,9 +36,16 @@ export function boomResetStar(star) {
   return BOOM_RESET_STARS[star] ?? 12
 }
 
+// The Enhancement Mode used at `star`: a per-star plan wins over the single
+// calculator-wide mode.
+function modeAt(star, opts) {
+  return opts.modes?.[star] ?? opts.mode ?? 1
+}
+
 // Per-attempt { success, maintain, boom } at `star` under the given options.
 export function attemptOdds(star, opts = {}) {
-  const { starCatch, safeguard, mode = 1, eventBoom30, eventGuaranteed } = opts
+  const { starCatch, safeguard, eventShining } = opts
+  const mode = modeAt(star, opts)
   const modeRow = ENHANCEMENT_MODES[star]
   let success =
     modeRow && mode > 1 ? modeRow.success[mode - 1] : SF_RATES[star].success
@@ -50,11 +56,7 @@ export function attemptOdds(star, opts = {}) {
     success = SF_RATES[star].success
     boom = 0
   }
-  if (eventGuaranteed && GUARANTEED_STARS.includes(star)) {
-    success = 1
-    boom = 0
-  }
-  if (eventBoom30 && star <= BOOM_EVENT_MAX_STAR) boom *= 0.7
+  if (eventShining && star <= BOOM_EVENT_MAX_STAR) boom *= 0.7
   if (starCatch && success < 1) {
     const boosted = Math.min(success * STAR_CATCH_MULT, 1)
     // The extra success mass comes proportionally out of maintain and boom.
@@ -67,7 +69,8 @@ export function attemptOdds(star, opts = {}) {
 // Meso cost of one attempt at `star` for an equip of `level`. GMS prices by
 // the level floored to its tens (a Lv.287 item costs as Lv.280).
 export function attemptCost(level, star, opts = {}) {
-  const { safeguard, mode = 1, mvp = 'none', eventCost30 } = opts
+  const { safeguard, mvp = 'none', eventShining } = opts
+  const mode = modeAt(star, opts)
   const lvl = Math.floor(level / 10) * 10
   const base =
     star < 10
@@ -78,7 +81,7 @@ export function attemptCost(level, star, opts = {}) {
 
   let mult = 1
   if (star <= MVP_MAX_STAR) mult -= MVP_DISCOUNTS[mvp] ?? 0
-  if (eventCost30) mult *= 0.7
+  if (eventShining) mult *= 0.7
 
   const modeRow = ENHANCEMENT_MODES[star]
   if (safeguard && SAFEGUARD_STARS.includes(star)) {
@@ -99,7 +102,7 @@ export function attemptCost(level, star, opts = {}) {
 // Stars gained by one success at `star` under the given options. The +1★
 // event only reaches ≤10★ attempts, so jumps never interact with booms
 // (checkpoints are all ≥12★) or the safeguard/mode range.
-function successStep(star, opts) {
+export function successStep(star, opts) {
   return opts.eventPlusOne && star <= PLUS_ONE_MAX_STAR ? 2 : 1
 }
 

@@ -1,9 +1,11 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
+import { useState } from 'react'
 import { MantineProvider } from '@mantine/core'
 import StarForcePanel from './StarForcePanel'
 import { expectedRun } from '@/lib/starforce'
-import { formatMeso } from '@/lib/format'
+import { formatMeso, pct } from '@/lib/format'
+import { optimizeModes } from '@/lib/optimizer'
 
 afterEach(cleanup)
 
@@ -160,12 +162,10 @@ describe('StarForcePanel', () => {
     fill('Target star', '18')
     fireEvent.click(screen.getByLabelText('Shining Star Force'))
 
-    // The single toggle drives both engine flags.
     const run = expectedRun(200, 17, 18, {
       starCatch: true,
       mode: 1,
-      eventCost30: true,
-      eventBoom30: true,
+      eventShining: true,
     })
     expect(
       screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
@@ -183,8 +183,7 @@ describe('StarForcePanel', () => {
     const run = expectedRun(160, 8, 12, {
       starCatch: true,
       mode: 1,
-      eventCost30: true,
-      eventBoom30: true,
+      eventShining: true,
       eventPlusOne: true,
     })
     // 2-star jumps show in the table and the combined cost reflects all flags.
@@ -216,8 +215,204 @@ describe('StarForcePanel', () => {
   })
 })
 
+describe('share link', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+    delete navigator.clipboard
+  })
+
+  it('fills the inputs from a shared link, then cleans the address bar', () => {
+    window.history.replaceState(null, '', '/?lv=160&from=12&to=21&sg=1')
+    renderPanel()
+    expect(screen.getByLabelText('Item level').value).toBe('160')
+    expect(screen.getByLabelText('Current star').value).toBe('12')
+    expect(screen.getByLabelText('Target star').value).toBe('21')
+    expect(screen.getByLabelText('Safeguard')).toBeChecked()
+    expect(window.location.search).toBe('')
+  })
+
+  it('leaves an address without calculator settings alone', () => {
+    window.history.replaceState(null, '', '/?ref=discord#top')
+    renderPanel()
+    expect(screen.getByLabelText('Item level').value).toBe('200')
+    expect(window.location.search).toBe('?ref=discord')
+    expect(window.location.hash).toBe('#top')
+  })
+
+  it('copies a link to the current inputs', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    renderPanel()
+    fill('Item level', '160')
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
+    )
+    expect(await screen.findByText('✓ Copied')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Link copied')
+  })
+
+  it('says so when the copy fails', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => Promise.reject(new Error('denied')) },
+      configurable: true,
+    })
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(await screen.findByText("Couldn't copy")).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Couldn't copy the link",
+    )
+  })
+})
+
+describe('phone results bar', () => {
+  let reportHero
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete window.IntersectionObserver
+  })
+
+  it('shows only while the result cards are below the screen', () => {
+    window.IntersectionObserver = class {
+      constructor(callback) {
+        reportHero = (entry) => act(() => callback([entry]))
+      }
+      observe() {}
+      disconnect() {}
+    }
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
+    renderPanel()
+    const bar = screen.getByRole('button', {
+      name: /full breakdown/i,
+      hidden: true,
+    })
+    expect(bar).toHaveAttribute('inert')
+
+    reportHero({ isIntersecting: false, boundingClientRect: { top: 900 } })
+    expect(bar).not.toHaveAttribute('inert')
+    const run = expectedRun(200, 0, 22, { starCatch: true, mode: 1 })
+    expect(bar).toHaveTextContent(formatMeso(Math.round(run.cost)))
+    expect(bar).toHaveTextContent(run.booms.toFixed(1))
+
+    fireEvent.click(bar)
+    expect(scrollIntoView).toHaveBeenCalled()
+    expect(document.activeElement).toHaveClass('sfHero')
+
+    reportHero({ isIntersecting: true, boundingClientRect: { top: 400 } })
+    expect(bar).toHaveAttribute('inert')
+    // Scrolled past the cards (down in the table): still out of the way.
+    reportHero({ isIntersecting: false, boundingClientRect: { top: -300 } })
+    expect(bar).toHaveAttribute('inert')
+  })
+})
+
 describe('formatMeso shorthand used by the panel', () => {
   it('is lowercase per MapleStory convention', () => {
     expect(formatMeso(1500000000)).toBe('1.5b')
+  })
+})
+
+function Harness({ initial = 'calculator' }) {
+  const [view, setView] = useState(initial)
+  return <StarForcePanel view={view} onViewChange={setView} />
+}
+
+function renderHarness(initial) {
+  return render(
+    <MantineProvider>
+      <Harness initial={initial} />
+    </MantineProvider>,
+  )
+}
+
+describe('Lab view', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete window.IntersectionObserver
+    delete navigator.clipboard
+  })
+
+  it('keeps the inputs and hides calculator-only settings', () => {
+    renderHarness()
+    fill('Item level', '160')
+    fireEvent.click(screen.getByRole('tab', { name: 'Lab' }))
+    expect(
+      screen.queryByLabelText('Safeguard', { selector: 'input' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Enhancement mode')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Simulation runs')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('table', { name: 'Optimized plan' }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Item level').value).toBe('160')
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Calculator' }))
+    expect(screen.getByText('Enhancement table')).toBeInTheDocument()
+    expect(screen.getByLabelText('Item level').value).toBe('160')
+  })
+
+  it('ignores Safeguard and the mode left on in the calculator', () => {
+    renderHarness()
+    fireEvent.click(screen.getByLabelText('Safeguard'))
+    fireEvent.click(screen.getByText('Level 3'))
+    fireEvent.click(screen.getByRole('tab', { name: 'Lab' }))
+    const row = optimizeModes(
+      200,
+      0,
+      22,
+      {
+        starCatch: true,
+        mvp: 'none',
+        eventShining: false,
+        eventPlusOne: false,
+      },
+      0.9,
+    ).rows[2]
+    expect(
+      screen.getAllByText(formatMeso(Math.round(row.cost))).length,
+    ).toBeGreaterThan(0)
+    expect(screen.getAllByText(pct(row.chance)).length).toBeGreaterThan(0)
+  })
+
+  it('sends the Target box to the Target star field', () => {
+    renderHarness('lab')
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
+    fireEvent.click(screen.getByRole('button', { name: /Target star 22/ }))
+    const field = screen.getByLabelText('Target star')
+    expect(scrollIntoView).toHaveBeenCalled()
+    expect(document.activeElement).toBe(field)
+    expect(field).toHaveAttribute('data-flash')
+  })
+
+  it('copies a Lab link', () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    renderHarness('lab')
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/lab?lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
+    )
+  })
+
+  it('opens straight into the Lab without the phone bar, and re-arms it later', () => {
+    const observe = vi.fn()
+    window.IntersectionObserver = class {
+      observe = observe
+      disconnect() {}
+    }
+    renderHarness('lab')
+    expect(observe).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('button', { name: /full breakdown/i, hidden: true }),
+    ).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Calculator' }))
+    expect(observe).toHaveBeenCalledWith(document.querySelector('.sfHero'))
   })
 })

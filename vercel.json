@@ -1,0 +1,16 @@
+{
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "ms-mae-tracker.vercel.app" }],
+      "destination": "https://maplet.dev/:path*",
+      "permanent": true
+    },
+    { "source": "/starforce", "destination": "/", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/planner", "destination": "/index.html" },
+    { "source": "/lab", "destination": "/index.html" }
+  ]
+}

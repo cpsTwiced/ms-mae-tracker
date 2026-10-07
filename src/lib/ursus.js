@@ -1,3 +1,5 @@
+import { lastDailyReset } from './weeklyReset'
+
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
 
@@ -12,11 +14,7 @@ export const GOLDEN_TIME_WINDOWS = [
 // A window's concrete { start, end } timestamps on "now"'s UTC day — also
 // what the UI uses to print a window's hours in the viewer's local timezone.
 export function windowTimes(w, now = new Date()) {
-  const dayStart = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-  )
+  const dayStart = lastDailyReset(now)
   return {
     start: dayStart + w.startHour * HOUR_MS,
     end: dayStart + w.endHour * HOUR_MS,

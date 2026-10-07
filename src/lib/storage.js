@@ -1,7 +1,7 @@
-import { lastBossReset, lastQuestReset, lastMonthlyReset } from './weeklyReset'
+import { lastBossReset, lastMonthlyReset } from './weeklyReset'
 import { BOSS_CONTENT } from '@/data/bossContent'
 import { WEEKLY_CONTENT } from '@/data/weeklyContent'
-import { MAX_STAR, MVP_DISCOUNTS } from '@/data/starforce'
+import { MAX_STAR, MAX_SPARES, MVP_DISCOUNTS } from '@/data/starforce'
 
 // Namespace for the first public release. Earlier dev-only builds used other
 // keys; their data is intentionally not migrated (a clean v1 starting point).
@@ -92,7 +92,7 @@ function freshState() {
     characters: [character],
     activeId: character.id,
     bossResetAt: lastBossReset(),
-    weeklyResetAt: lastQuestReset(),
+    weeklyResetAt: lastBossReset(),
     monthlyResetAt: lastMonthlyReset(),
   }
 }
@@ -172,7 +172,7 @@ function normalize(state) {
     characters,
     activeId: ids.includes(state.activeId) ? state.activeId : ids[0],
     bossResetAt: resetAtOr(state.bossResetAt, lastBossReset()),
-    weeklyResetAt: resetAtOr(state.weeklyResetAt, lastQuestReset()),
+    weeklyResetAt: resetAtOr(state.weeklyResetAt, lastBossReset()),
     monthlyResetAt: resetAtOr(state.monthlyResetAt, lastMonthlyReset()),
   }
 }
@@ -227,7 +227,12 @@ export const SF_DEFAULTS = {
   eventShining: false,
   eventPlusOne: false,
   runs: '3000',
+  spares: '',
+  chance: '90',
 }
+
+// The Lab's "at least" chance options, as whole percents.
+export const SF_CHANCES = ['50', '75', '90', '95', '99']
 
 const SF_RUNS = ['1000', '3000', '10000', '20000']
 
@@ -255,7 +260,53 @@ function normalizeSfInputs(inputs) {
     eventShining: boolOr(i.eventShining, d.eventShining),
     eventPlusOne: boolOr(i.eventPlusOne, d.eventPlusOne),
     runs: SF_RUNS.includes(i.runs) ? i.runs : d.runs,
+    spares: digitsOr(i.spares, MAX_SPARES, d.spares),
+    chance: SF_CHANCES.includes(i.chance) ? i.chance : d.chance,
   }
+}
+
+// Share links carry every input as a short, readable query param
+// (?lv=200&from=0&to=22…), each with its own parser. Booleans travel as 1/0.
+// A parser returns undefined for junk, which normalizeSfInputs then replaces
+// with the default.
+const yesNo = (v) => (v === '1' ? true : v === '0' ? false : undefined)
+const whole = (v) => (/^\d+$/.test(v) ? v : undefined)
+const SHARE_PARAMS = {
+  lv: ['levelRaw', whole],
+  from: ['curRaw', whole],
+  to: ['targetRaw', whole],
+  sc: ['starCatch', yesNo],
+  sg: ['safeguard', yesNo],
+  mode: ['mode', Number],
+  mvp: ['mvp', String],
+  shine: ['eventShining', yesNo],
+  plus: ['eventPlusOne', yesNo],
+  runs: ['runs', String],
+  sp: ['spares', whole],
+  ch: ['chance', String],
+}
+
+export function sfInputsToQuery(inputs) {
+  const params = new URLSearchParams()
+  for (const [param, [field]] of Object.entries(SHARE_PARAMS)) {
+    const value = inputs[field]
+    params.set(param, typeof value === 'boolean' ? Number(value) : value)
+  }
+  return params.toString()
+}
+
+// Links are untrusted, so values go through the same repair as stored
+// setups. Null when the link carries no usable calculator settings (say, a
+// stray ?from=reddit tag), so the caller leaves the address alone.
+export function sfInputsFromQuery(search) {
+  const params = new URLSearchParams(search)
+  const inputs = {}
+  for (const [param, [field, parse]] of Object.entries(SHARE_PARAMS)) {
+    if (!params.has(param)) continue
+    const value = parse(params.get(param))
+    if (value !== undefined) inputs[field] = value
+  }
+  return Object.keys(inputs).length ? normalizeSfInputs(inputs) : null
 }
 
 // Splits a name into the characters a person sees, so the length cap counts

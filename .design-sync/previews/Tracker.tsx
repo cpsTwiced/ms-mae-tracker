@@ -51,7 +51,8 @@ const character = {
 // tall stacked phone layout, which would clip at the cell height.
 const desktopLayoutCss = `
   .plannerGrid { flex-direction: row; align-items: stretch; }
-  .plannerCol { flex: 1 1 0; height: 24rem; min-height: 22rem; }
+  .plannerCol { display: flex; flex-direction: column; gap: var(--mantine-spacing-sm); min-width: 0; flex: 1 1 0; height: 24rem; min-height: 22rem; }
+  .timersPane { order: 0; }
   .plannerCol > .pane { flex: 1 1 0; }
   .pane { flex: 0 1 auto; }
   .paneBody { flex: 1; min-height: 0; overflow: hidden; }
@@ -66,14 +67,13 @@ export const FilledPlanner = () => (
     <Tracker
       character={character}
       onToggleBoss={noop}
-      onRemoveBoss={noop}
       onReorderBoss={noop}
       onSetBossDifficulty={noop}
       onClearBosses={noop}
       onToggleWeekly={noop}
-      onRemoveWeekly={noop}
       onReorderWeekly={noop}
       onSetWeeklyContent={noop}
+      onClearWeeklies={noop}
     />
   </Backdrop>
 )

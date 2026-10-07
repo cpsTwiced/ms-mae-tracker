@@ -15,10 +15,13 @@ body {
 /* Single-row top bar: the Pink Bean favicon + a large "Maplet" title on the
    left with the segmented pill tabs right beside them, underlined by a
    full-width rule. */
+/* Wraps so the tabs drop under the brand on very narrow phones (<310px)
+   instead of pushing the whole page wider than the screen. */
 .appHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
   margin-bottom: var(--mantine-spacing-md);
   padding-bottom: 12px;
   border-bottom: 1px solid var(--mantine-color-dark-5);
@@ -91,18 +94,19 @@ body {
    right. On wide screens (Mantine `md`, 62em) both columns share one shorter
    height, with a hard minimum so the panes never collapse too far. Long lists
    scroll inside the panes, leaving background visible below the planner. On
-   narrow screens the columns stack and the page scrolls normally. */
+   narrow screens the panes stack (Weekly, Boss, then Timers) and the page
+   scrolls normally. */
 .plannerGrid {
   display: flex;
   flex-direction: column;
   gap: var(--mantine-spacing-sm);
 }
 
+/* Narrow screens: the columns dissolve so their panes stack straight in the
+   grid, and Timers drops below both lists — the checklists are what people
+   open the page for. */
 .plannerCol {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mantine-spacing-sm);
-  min-width: 0;
+  display: contents;
 }
 
 @media (min-width: 62em) {
@@ -119,6 +123,10 @@ body {
   }
 
   .plannerCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mantine-spacing-sm);
+    min-width: 0;
     flex: 1 1 0;
     height: var(--planner-column-height);
     min-height: var(--planner-column-min-height);
@@ -127,11 +135,23 @@ body {
   .plannerCol > .pane {
     flex: 1 1 0;
   }
+
+  /* An empty list keeps its natural height instead of a tall blank card. */
+  .plannerCol > .pane[data-empty] {
+    flex: 0 0 auto;
+  }
 }
 
 /* Keep Timers at its natural height; only the content lists shrink/scroll. */
 .timersPane {
   flex-shrink: 0;
+  order: 1;
+}
+
+@media (min-width: 62em) {
+  .timersPane {
+    order: 0;
+  }
 }
 
 /* A content pane. On narrow screens it's a plain, naturally-sized card and the
@@ -440,6 +460,20 @@ body {
   color: var(--mantine-color-sage-light-color);
 }
 
+/* Level / star fields: large monospace figures; the target star is tinted. */
+.sfNumInput {
+  height: 40px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 16px;
+  font-weight: 600;
+  border-color: var(--mantine-color-dark-3);
+}
+
+.sfNumInputTarget {
+  border-color: var(--mantine-color-sage-8);
+  color: var(--mantine-color-sage-3);
+}
+
 /* Saved setups: small tags in the setup list, the Edited/Updated note in the
    picker, and the draggable rows in the Reorder dialog. */
 .sfTag {
@@ -591,6 +625,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  scroll-margin-top: 16px;
 }
 
 .sfHeroCost {
@@ -728,6 +763,19 @@ body {
   background: rgba(255, 255, 255, 0.015);
 }
 
+/* Phones drop the two secondary columns and tighten the cell spacing so the
+   table fits down to 320px without a hidden sideways scroll. */
+@media (max-width: 48em) {
+  .sfTable .sfWideOnly {
+    display: none;
+  }
+
+  .sfTable th,
+  .sfTable td {
+    padding-inline: 10px;
+  }
+}
+
 /* Page footer: provenance caveat. */
 .sfFooter {
   margin-top: 28px;
@@ -735,6 +783,53 @@ body {
   border-top: 1px solid var(--mantine-color-dark-6);
   font-size: 11px;
   color: var(--mantine-color-dark-3);
+}
+
+/* Phone results bar: pinned to the bottom while the hero cards are below the
+   screen, styled like the stat strip, with the primary (filled) button. The
+   whole bar is the tap target; it slides away (and goes inert) once the cards
+   are in view. Desktop shows the results beside the inputs, so it never
+   appears there. */
+.sfBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--mantine-color-dark-7);
+  border-top: 1px solid var(--mantine-color-dark-5);
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.35);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sfBar:not([data-visible]) {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+/* Keep keyboard-focused controls from scrolling in under the visible bar
+   (matches BAR_CLEARANCE in StarForcePanel.jsx). */
+html:has(.sfBar[data-visible]) {
+  scroll-padding-bottom: 104px;
+}
+
+.sfBarValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+@media (min-width: 62em) {
+  .sfBar {
+    display: none;
+  }
 }
 
 /* --- Touch devices -------------------------------------------------------- */
@@ -757,11 +852,136 @@ body {
    the theme (main.jsx). */
 @media (prefers-reduced-motion: reduce) {
   .appTab,
+  .sfViewTab,
   .charTile,
   .charTileHandle,
   .charAddTile,
   .sfPill,
-  .sfModeCard {
+  .sfModeCard,
+  .sfBar {
     transition: none;
   }
+}
+
+/* --- Star Force Lab ----------------------------------------------------- */
+
+/* Lab tables grow with their rows instead of sharing the column's height,
+   and the shorter Lab inputs card keeps its own height beside them. */
+.sfLabResults .sfTableCard {
+  flex: none;
+}
+
+@media (min-width: 62em) {
+  .sfLayout:has(> .sfLabResults) {
+    align-items: flex-start;
+  }
+}
+
+/* Short headers stay on one line; the per-star level columns run narrow. */
+.sfLabResults .sfTable th {
+  white-space: nowrap;
+}
+
+/* The selected spare count in the options table. */
+.sfTable tbody tr[data-selected] {
+  background: var(--mantine-color-sage-light);
+}
+
+.sfTable .sfLabMode {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  font-weight: 600;
+  color: var(--mantine-color-sage-3);
+}
+
+.sfTable .sfLabLevel {
+  text-align: center;
+  font-weight: 600;
+  padding-inline: 6px;
+}
+
+/* Level 1 is the default, so it steps back and the modes in use stand out. */
+.sfTable [data-basic] {
+  color: var(--mantine-color-dark-3);
+}
+
+.sfTable .sfLabMiss {
+  text-align: left;
+  font-family: var(--mantine-font-family);
+  color: var(--mantine-color-orange-3);
+}
+
+/* Safeguard (Level 4 at 15-17★) gets its own color so it stands apart from
+   the mode levels. */
+.sfSafeguard,
+.sfTable .sfLabMode[data-safeguard] {
+  color: var(--mantine-color-blue-4);
+}
+
+/* "View ›" links under Other options. */
+.sfLabView {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: var(--mantine-color-sage-3);
+}
+
+.sfLabView:hover {
+  text-decoration: underline;
+}
+
+/* Spare-count buttons read like the table's other first-column labels. */
+.sfLabPick {
+  font: inherit;
+  color: inherit;
+}
+
+.sfInfo {
+  display: inline-flex;
+  color: var(--mantine-color-dark-2);
+  cursor: help;
+}
+
+/* Read-only mirror of the Target star field, styled like it. */
+.sfTargetMirror {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 92px;
+  padding: 0 12px;
+  border: 1px solid var(--mantine-color-sage-8);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-dark-6);
+}
+
+/* Brief highlight when the Lab sends you to the Target star field. */
+.sfNumInput[data-flash] {
+  box-shadow: 0 0 0 3px var(--mantine-color-sage-light);
+}
+
+/* Calculator | Lab switch: plain text tabs, the active one underlined, so it
+   stays quieter than the header's pill tabs. */
+.sfViewTabs {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.sfViewTab {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mantine-color-dark-2);
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.sfViewTab:hover {
+  color: var(--mantine-color-dark-0);
+}
+
+.sfViewTab[data-active] {
+  border-bottom-color: var(--mantine-color-sage-filled);
+  color: var(--mantine-color-dark-0);
 }

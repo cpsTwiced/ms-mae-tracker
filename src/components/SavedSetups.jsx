@@ -10,24 +10,16 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter } from '@dnd-kit/core'
 import {
   SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useElementSize } from '@mantine/hooks'
 import ResponsiveModal from './ResponsiveModal'
+import { moveById, useReorderSensors } from './useReorder'
 import {
   loadPresets,
   savePresets,
@@ -143,7 +135,6 @@ function StatusTag({ updated, compact }) {
 // Name form shared by Save and Rename. Mounted only while open, so it starts
 // from `initial` every time.
 function NameModal({
-  opened,
   title,
   submitLabel,
   initial,
@@ -155,7 +146,7 @@ function NameModal({
   const trimmed = name.trim()
   const length = nameChars(name).length
   return (
-    <ResponsiveModal opened={opened} onClose={onClose} title={title}>
+    <ResponsiveModal opened onClose={onClose} title={title}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -240,12 +231,7 @@ function ReorderRow({ preset }) {
 }
 
 function ReorderList({ presets, onReorder, onDragging }) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
+  const sensors = useReorderSensors()
 
   function handleDragEnd({ active, over }) {
     onDragging(false)
@@ -364,19 +350,13 @@ export default function SavedSetups({ inputs, onLoad }) {
   }
 
   function reorder(fromId, toId) {
-    commit((list) => {
-      const from = list.findIndex((p) => p.id === fromId)
-      const to = list.findIndex((p) => p.id === toId)
-      return from === -1 || to === -1 ? list : arrayMove(list, from, to)
-    })
+    commit((list) => moveById(list, fromId, toId))
   }
 
   const compact = rowWidth > 0 && rowWidth < COMPACT_ROW_WIDTH
-  const status = updated ? (
-    <StatusTag updated compact={compact} />
-  ) : edited ? (
-    <StatusTag compact={compact} />
-  ) : null
+  const status = (updated || edited) && (
+    <StatusTag updated={updated} compact={compact} />
+  )
   const close = () => setDialog(null)
 
   return (
@@ -494,7 +474,6 @@ export default function SavedSetups({ inputs, onLoad }) {
 
       {dialog === 'save' && (
         <NameModal
-          opened
           title="Save setup"
           submitLabel="Save"
           initial=""
@@ -511,7 +490,6 @@ export default function SavedSetups({ inputs, onLoad }) {
       )}
       {dialog === 'rename' && active && (
         <NameModal
-          opened
           title="Rename setup"
           submitLabel="Rename"
           initial={active.name}

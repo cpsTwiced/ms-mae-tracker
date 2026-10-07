@@ -11,25 +11,17 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter } from '@dnd-kit/core'
 import {
   SortableContext,
-  arrayMove,
   horizontalListSortingStrategy,
-  sortableKeyboardCoordinates,
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { MAX_CHARACTERS } from '@/lib/storage'
 import CharacterFields from './CharacterFields'
 import ResponsiveModal from './ResponsiveModal'
+import { moveById, useReorderSensors } from './useReorder'
 
 const EMPTY_CHARACTER_DRAFT = { name: '', level: 1, job: '', server: '' }
 
@@ -69,15 +61,6 @@ function PlusIcon() {
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   )
-}
-
-function characterDraft(character) {
-  return {
-    name: character.name,
-    level: character.level,
-    job: character.job,
-    server: character.server,
-  }
 }
 
 // One character, shown as a tile in the roster grid. A full-tile transparent
@@ -219,39 +202,29 @@ function CharacterTile({
 }
 
 // Dashed tile that sits after the roster; opens the add modal. At the roster
-// cap it renders as a disabled, non-interactive tile with a hint tooltip.
+// cap it stays a real (focusable) button with aria-disabled rather than a
+// plain div, so keyboard users can reach it and surface the cap tooltip; the
+// click is suppressed so it can't add past the cap.
 function AddTile({ disabled, onClick }) {
-  if (disabled) {
-    // Keep it a real (focusable) button with aria-disabled rather than a plain
-    // div, so keyboard users can reach it and surface the cap tooltip. The
-    // click is suppressed so it can't add past the cap.
-    return (
-      <Tooltip label={`Maximum of ${MAX_CHARACTERS} characters`} withArrow>
-        <UnstyledButton
-          className="charAddTile"
-          data-disabled
-          aria-disabled="true"
-          onClick={(e) => e.preventDefault()}
-        >
-          <PlusIcon />
-          <Text fw={600} size="sm">
-            Add Character
-          </Text>
-        </UnstyledButton>
-      </Tooltip>
-    )
-  }
   return (
-    <UnstyledButton
-      className="charAddTile"
-      aria-label="Add character"
-      onClick={onClick}
+    <Tooltip
+      label={`Maximum of ${MAX_CHARACTERS} characters`}
+      withArrow
+      disabled={!disabled}
     >
-      <PlusIcon />
-      <Text fw={600} size="sm">
-        Add Character
-      </Text>
-    </UnstyledButton>
+      <UnstyledButton
+        className="charAddTile"
+        data-disabled={disabled || undefined}
+        aria-disabled={disabled || undefined}
+        aria-label={disabled ? undefined : 'Add character'}
+        onClick={disabled ? (e) => e.preventDefault() : onClick}
+      >
+        <PlusIcon />
+        <Text fw={600} size="sm">
+          Add Character
+        </Text>
+      </UnstyledButton>
+    </Tooltip>
   )
 }
 
@@ -267,24 +240,20 @@ export default function CharacterBar({
   onRemove,
   onReorder,
 }) {
-  const [addOpen, setAddOpen] = useState(false)
-  const [addDraft, setAddDraft] = useState(EMPTY_CHARACTER_DRAFT)
-  // Edit/delete keep their target and visibility separate: the target is
-  // retained while the modal fades out so its title never degrades to the
-  // nameless fallback mid-transition (the "ghost dialog" effect).
+  // One add/edit form. `editTarget` is null when adding; it's kept apart from
+  // `formOpen` and retained while the modal fades out, so the title never
+  // degrades mid-transition (the "ghost dialog" effect).
+  const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
-  const [editOpen, setEditOpen] = useState(false)
-  const [editDraft, setEditDraft] = useState(EMPTY_CHARACTER_DRAFT)
+  const [draft, setDraft] = useState(EMPTY_CHARACTER_DRAFT)
+  // The delete dialog is open exactly while it has a target.
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [deleteOpen, setDeleteOpen] = useState(false)
   // The last target's name, kept (only ever overwritten) so the confirm
-  // title stays personal while the modal fades out even after the target
-  // itself is cleared on a successful delete.
+  // title stays personal while the modal fades out after the target clears.
   const [deleteName, setDeleteName] = useState('')
   // Which tile's ⋮ menu is open — exactly one at a time.
   const [menuFor, setMenuFor] = useState(null)
   const canDelete = characters.length > 1
-  const canReorder = characters.length > 1
   const atMax = characters.length >= MAX_CHARACTERS
 
   // Track whether the roster actually overflows. We only reserve the scrollbar
@@ -318,86 +287,58 @@ export default function CharacterBar({
     }
   }, [characters.length])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
+  const sensors = useReorderSensors()
 
-  function handleDragEnd({ active: dragged, over }) {
-    if (over && dragged.id !== over.id) {
-      const oldIndex = characters.findIndex((c) => c.id === dragged.id)
-      const newIndex = characters.findIndex((c) => c.id === over.id)
-      // Characters can vanish mid-drag (e.g. a cross-tab sync replaces the
-      // roster); arrayMove with -1 would silently relocate the last one.
-      if (oldIndex === -1 || newIndex === -1) return
-      onReorder(arrayMove(characters, oldIndex, newIndex))
-    }
+  function handleDragEnd({ active, over }) {
+    const next = over ? moveById(characters, active.id, over.id) : characters
+    if (next !== characters) onReorder(next)
   }
 
   function startAdd() {
     setMenuFor(null)
-    setAddDraft(EMPTY_CHARACTER_DRAFT)
-    setAddOpen(true)
-  }
-
-  function saveAdd(e) {
-    e.preventDefault()
-    const name = addDraft.name.trim()
-    if (!name) return
-    onAdd({
-      name,
-      // The field clamps on blur; this covers a submit that skips the blur.
-      level:
-        typeof addDraft.level === 'number'
-          ? Math.min(300, Math.max(1, addDraft.level))
-          : 1,
-      job: addDraft.job,
-      server: addDraft.server,
-    })
-    setAddOpen(false)
-    setAddDraft(EMPTY_CHARACTER_DRAFT)
+    setEditTarget(null)
+    setDraft(EMPTY_CHARACTER_DRAFT)
+    setFormOpen(true)
   }
 
   function startEdit(character) {
+    const { name, level, job, server } = character
     setMenuFor(null)
     setEditTarget(character)
-    setEditDraft(characterDraft(character))
-    setEditOpen(true)
+    setDraft({ name, level, job, server })
+    setFormOpen(true)
   }
 
-  function saveEdit(e) {
+  function saveForm(e) {
     e.preventDefault()
-    if (!editTarget) return
-    const name = editDraft.name.trim()
+    const name = draft.name.trim()
     if (!name) return
-    onUpdate(editTarget.id, {
+    const fields = {
       name,
+      // The field clamps on blur; this covers a submit that skips the blur.
       level:
-        typeof editDraft.level === 'number'
-          ? Math.min(300, Math.max(1, editDraft.level))
+        typeof draft.level === 'number'
+          ? Math.min(300, Math.max(1, draft.level))
           : 1,
-      job: editDraft.job,
-      server: editDraft.server,
-    })
-    setEditOpen(false)
+      job: draft.job,
+      server: draft.server,
+    }
+    if (editTarget) onUpdate(editTarget.id, fields)
+    else onAdd(fields)
+    setFormOpen(false)
   }
 
   function startDelete(character) {
     setMenuFor(null)
     setDeleteTarget(character)
     setDeleteName(character.name)
-    setDeleteOpen(true)
   }
 
   function confirmDelete() {
     if (!deleteTarget) return
     onRemove(deleteTarget.id)
-    // Clear the flag AND the target in the same handler: with the target
-    // gone (and `opened` requiring it), no later re-render can resurrect the
-    // dialog for a character that no longer exists.
-    setDeleteOpen(false)
+    // Clearing the target closes the dialog, so no later re-render can
+    // resurrect it for a character that no longer exists.
     setDeleteTarget(null)
   }
 
@@ -427,7 +368,7 @@ export default function CharacterBar({
                     key={c.id}
                     character={c}
                     isActive={c.id === activeId}
-                    canReorder={canReorder}
+                    canReorder={canDelete}
                     canDelete={canDelete}
                     menuOpened={menuFor === c.id}
                     onMenuChange={(opened) => setMenuFor(opened ? c.id : null)}
@@ -446,61 +387,33 @@ export default function CharacterBar({
       </Card>
 
       <ResponsiveModal
-        opened={addOpen}
-        onClose={() => setAddOpen(false)}
-        title="Add character"
+        opened={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editTarget ? `Edit ${editTarget.name}` : 'Add character'}
       >
-        <form onSubmit={saveAdd}>
+        <form onSubmit={saveForm}>
           <CharacterFields
-            values={addDraft}
-            onChange={(patch) => setAddDraft((d) => ({ ...d, ...patch }))}
-            namePlaceholder="e.g. MyMain"
+            values={draft}
+            onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+            namePlaceholder={editTarget ? undefined : 'e.g. MyMain'}
           />
           <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => setAddOpen(false)}>
+            <Button variant="subtle" onClick={() => setFormOpen(false)}>
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={
-                !addDraft.name.trim() || typeof addDraft.level !== 'number'
-              }
+              disabled={!draft.name.trim() || typeof draft.level !== 'number'}
             >
-              Create character
+              {editTarget ? 'Save changes' : 'Create character'}
             </Button>
           </Group>
         </form>
       </ResponsiveModal>
 
       <ResponsiveModal
-        opened={editOpen}
-        onClose={() => setEditOpen(false)}
-        title={`Edit ${editTarget?.name ?? 'character'}`}
-      >
-        <form onSubmit={saveEdit}>
-          <CharacterFields
-            values={editDraft}
-            onChange={(patch) => setEditDraft((d) => ({ ...d, ...patch }))}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => setEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                !editDraft.name.trim() || typeof editDraft.level !== 'number'
-              }
-            >
-              Save changes
-            </Button>
-          </Group>
-        </form>
-      </ResponsiveModal>
-
-      <ResponsiveModal
-        opened={deleteOpen && deleteTarget !== null}
-        onClose={() => setDeleteOpen(false)}
+        opened={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
         title={`Delete ${deleteName || 'character'}?`}
       >
         <Text size="sm" c="dimmed">
@@ -508,7 +421,7 @@ export default function CharacterBar({
           will be removed.
         </Text>
         <Group justify="flex-end" mt="md">
-          <Button variant="subtle" onClick={() => setDeleteOpen(false)}>
+          <Button variant="subtle" onClick={() => setDeleteTarget(null)}>
             Cancel
           </Button>
           <Button color="red" onClick={confirmDelete}>
