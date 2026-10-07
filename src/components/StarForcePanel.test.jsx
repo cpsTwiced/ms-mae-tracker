@@ -28,7 +28,7 @@ describe('StarForcePanel', () => {
     expect(screen.getByLabelText('Current star').value).toBe('0')
     expect(screen.getByLabelText('Target star').value).toBe('22')
 
-    const run = expectedRun(200, 0, 22, { starCatch: true, mode: 1 })
+    const run = expectedRun(200, 0, 22, { mode: 1 })
     expect(
       screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
     ).toBeInTheDocument()
@@ -49,7 +49,7 @@ describe('StarForcePanel', () => {
     fill('Current star', '17')
     fill('Target star', '18')
 
-    const run = expectedRun(200, 17, 18, { starCatch: true, mode: 1 })
+    const run = expectedRun(200, 17, 18, { mode: 1 })
     expect(
       screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
     ).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('StarForcePanel', () => {
     fill('Target star', '30')
     expect(screen.getByText(/simulation skipped/)).toBeInTheDocument()
     // The closed-form expectations still render.
-    const run = expectedRun(200, 0, 30, { starCatch: true, mode: 1 })
+    const run = expectedRun(200, 0, 30, { mode: 1 })
     expect(
       screen.getByText(`${Math.round(run.cost).toLocaleString('en-US')} mesos`),
     ).toBeInTheDocument()
@@ -140,10 +140,9 @@ describe('StarForcePanel', () => {
     fill('Current star', '15')
     fill('Target star', '16')
 
-    const plain = expectedRun(200, 15, 16, { starCatch: true, mode: 1 })
+    const plain = expectedRun(200, 15, 16, { mode: 1 })
     fireEvent.click(screen.getByLabelText('Safeguard'))
     const guarded = expectedRun(200, 15, 16, {
-      starCatch: true,
       mode: 1,
       safeguard: true,
     })
@@ -163,7 +162,6 @@ describe('StarForcePanel', () => {
     fireEvent.click(screen.getByLabelText('Shining Star Force'))
 
     const run = expectedRun(200, 17, 18, {
-      starCatch: true,
       mode: 1,
       eventShining: true,
     })
@@ -181,7 +179,6 @@ describe('StarForcePanel', () => {
     fireEvent.click(screen.getByLabelText('1+1 Star Force'))
 
     const run = expectedRun(160, 8, 12, {
-      starCatch: true,
       mode: 1,
       eventShining: true,
       eventPlusOne: true,
@@ -200,7 +197,7 @@ describe('StarForcePanel', () => {
     fill('Target star', '15')
     // Deterministic seed: the stat strip renders concrete meso figures.
     expect(screen.getByText('Median run')).toBeInTheDocument()
-    const attempt = expectedRun(150, 14, 15, { starCatch: true })
+    const attempt = expectedRun(150, 14, 15, {})
     expect(attempt.cost).toBeGreaterThan(0)
     // Median of a 14→15 climb is a whole number of attempt costs.
     expect(
@@ -249,7 +246,7 @@ describe('share link', () => {
     fill('Item level', '160')
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     expect(writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/?lv=160&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
+      `${window.location.origin}/?lv=160&from=0&to=22&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
     )
     expect(await screen.findByText('✓ Copied')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Link copied')
@@ -294,7 +291,7 @@ describe('phone results bar', () => {
 
     reportHero({ isIntersecting: false, boundingClientRect: { top: 900 } })
     expect(bar).not.toHaveAttribute('inert')
-    const run = expectedRun(200, 0, 22, { starCatch: true, mode: 1 })
+    const run = expectedRun(200, 0, 22, { mode: 1 })
     expect(bar).toHaveTextContent(formatMeso(Math.round(run.cost)))
     expect(bar).toHaveTextContent(run.booms.toFixed(1))
 
@@ -365,7 +362,6 @@ describe('Lab view', () => {
       0,
       22,
       {
-        starCatch: true,
         mvp: 'none',
         eventShining: false,
         eventPlusOne: false,
@@ -397,7 +393,7 @@ describe('Lab view', () => {
     renderHarness('lab')
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     expect(writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/lab?lv=200&from=0&to=22&sc=1&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
+      `${window.location.origin}/lab?lv=200&from=0&to=22&sg=0&mode=1&mvp=none&shine=0&plus=0&runs=3000&sp=&ch=90`,
     )
   })
 

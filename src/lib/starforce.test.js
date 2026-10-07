@@ -10,6 +10,7 @@ import {
   SIM_MAX_EXPECTED_ATTEMPTS,
   estimateRunQuantiles,
 } from './starforce'
+import { SF_RATES, ENHANCEMENT_MODES } from '@/data/starforce'
 
 describe('maxStarForLevel', () => {
   it('follows the equip-level caps', () => {
@@ -25,42 +26,41 @@ describe('maxStarForLevel', () => {
 })
 
 describe('attemptOdds', () => {
-  it('returns base v.269 rates', () => {
-    expect(attemptOdds(15)).toEqual({
-      success: 0.3,
-      maintain: 1 - 0.3 - 0.021,
-      boom: 0.021,
+  it('keeps the base v.269 rates in the table', () => {
+    expect(SF_RATES[15]).toMatchObject({ success: 0.3, boom: 0.021 })
+    expect(SF_RATES[29].success).toBeCloseTo(0.01)
+    expect(SF_RATES[29].boom).toBeCloseTo(0.198)
+    expect(SF_RATES[10]).toMatchObject({ success: 0.5, boom: 0 })
+    expect(attemptOdds(10)).toEqual({
+      success: 0.525,
+      maintain: 0.475,
+      boom: 0,
     })
-    expect(attemptOdds(29).success).toBeCloseTo(0.01)
-    expect(attemptOdds(29).boom).toBeCloseTo(0.198)
-    expect(attemptOdds(10)).toEqual({ success: 0.5, maintain: 0.5, boom: 0 })
   })
 
-  it('star catch multiplies success ×1.05 and redistributes boom', () => {
+  it('always applies the former Star Catch ×1.05 and redistributes boom', () => {
     // 15★: 30% → 31.5%, boom 2.1% → 2.055% (matches the published GMS table).
-    const odds = attemptOdds(15, { starCatch: true })
+    const odds = attemptOdds(15)
     expect(odds.success).toBeCloseTo(0.315, 10)
     expect(odds.boom).toBeCloseTo(0.02055, 10)
   })
 
   it('applies enhancement modes at 15-21★', () => {
     // 20★ mode 3: success 30% → 20%, boom 10.5% → 4%.
-    expect(attemptOdds(20, { mode: 3 })).toEqual({
-      success: 0.2,
-      maintain: 1 - 0.2 - 0.04,
-      boom: 0.04,
-    })
-    // With star catch: 21% / 3.95%, matching the published GMS table.
-    const caught = attemptOdds(20, { mode: 3, starCatch: true })
+    // Table: 20% / 4%; with the ×1.05: 21% / 3.95%, matching the published
+    // GMS table.
+    expect(ENHANCEMENT_MODES[20].success[2]).toBe(0.2)
+    expect(ENHANCEMENT_MODES[20].boom[2]).toBe(0.04)
+    const caught = attemptOdds(20, { mode: 3 })
     expect(caught.success).toBeCloseTo(0.21, 10)
     expect(caught.boom).toBeCloseTo(0.0395, 10)
     // Modes don't touch success below 18★.
-    expect(attemptOdds(17, { mode: 2 }).success).toBe(0.15)
-    expect(attemptOdds(17, { mode: 2 }).boom).toBeCloseTo(0.0425)
+    expect(attemptOdds(17, { mode: 2 }).success).toBe(attemptOdds(17).success)
+    expect(ENHANCEMENT_MODES[17].boom[1]).toBeCloseTo(0.0425)
     // 20★ modes 2/4 use tadeucci's in-game-measured 25%/15%, not the
     // 24%/16% the other stars' relative-reduction pattern would predict.
-    expect(attemptOdds(20, { mode: 2 }).success).toBe(0.25)
-    expect(attemptOdds(20, { mode: 4 }).success).toBe(0.15)
+    expect(ENHANCEMENT_MODES[20].success[1]).toBe(0.25)
+    expect(ENHANCEMENT_MODES[20].success[3]).toBe(0.15)
     // Mode 4 never booms.
     expect(attemptOdds(21, { mode: 4 }).boom).toBe(0)
     // Modes don't exist outside 15-21★.
@@ -70,10 +70,10 @@ describe('attemptOdds', () => {
   it('safeguard zeroes boom at 15-17★ and overrides the mode', () => {
     expect(attemptOdds(16, { safeguard: true }).boom).toBe(0)
     // Mode 2 would lower success at 18★, but safeguard doesn't reach 18★.
-    expect(attemptOdds(18, { safeguard: true }).boom).toBeCloseTo(0.068)
+    expect(attemptOdds(18, { safeguard: true }).boom).toBeCloseTo(0.0674, 4)
     // Safeguard forces mode-1 odds at covered stars.
     const odds = attemptOdds(17, { safeguard: true, mode: 3 })
-    expect(odds.success).toBe(0.15)
+    expect(odds.success).toBeCloseTo(0.1575)
     expect(odds.boom).toBe(0)
   })
 
@@ -157,7 +157,7 @@ describe('boomResetStar', () => {
 describe('expectedRun', () => {
   it('is cost/success below boom range', () => {
     const { cost, booms, perStar } = expectedRun(200, 14, 15)
-    expect(cost).toBeCloseTo(attemptCost(200, 14) / 0.3, 6)
+    expect(cost).toBeCloseTo(attemptCost(200, 14) / 0.315, 6)
     expect(booms).toBe(0)
     expect(perStar).toHaveLength(1)
     expect(perStar[0].star).toBe(14)
@@ -166,21 +166,22 @@ describe('expectedRun', () => {
   it('matches the hand-solved recurrence through a boom star', () => {
     // 15★ → 16★: a boom drops to 12★, so the re-climb is e12 + e13 + e14.
     const opts = {}
-    const e12 = attemptCost(200, 12) / 0.4
-    const e13 = attemptCost(200, 13) / 0.35
-    const e14 = attemptCost(200, 14) / 0.3
+    // Rates include the ×1.05: 15★ is 31.5% success / 2.055% boom.
+    const e12 = attemptCost(200, 12) / 0.42
+    const e13 = attemptCost(200, 13) / 0.3675
+    const e14 = attemptCost(200, 14) / 0.315
     const c15 = attemptCost(200, 15)
-    const expected = (c15 + 0.021 * (e12 + e13 + e14)) / 0.3
+    const expected = (c15 + 0.02055 * (e12 + e13 + e14)) / 0.315
     const run = expectedRun(200, 15, 16, opts)
     expect(run.cost).toBeCloseTo(expected, 6)
-    expect(run.booms).toBeCloseTo(0.021 / 0.3, 10)
+    expect(run.booms).toBeCloseTo(0.02055 / 0.315, 10)
   })
 
   it('reduces to a geometric sum when safeguard removes booms', () => {
     const opts = { safeguard: true }
     const { cost, booms } = expectedRun(200, 15, 17, opts)
     const expected =
-      attemptCost(200, 15, opts) / 0.3 + attemptCost(200, 16, opts) / 0.3
+      attemptCost(200, 15, opts) / 0.315 + attemptCost(200, 16, opts) / 0.315
     expect(cost).toBeCloseTo(expected, 6)
     expect(booms).toBe(0)
   })
@@ -192,13 +193,13 @@ describe('expectedRun', () => {
       (sum, s) => sum + expectedRun(200, s, s + 1).booms,
       0,
     )
-    expect(booms).toBeCloseTo((0.105 * (1 + reclimbBooms)) / 0.3, 6)
+    // 20★: 31.5% success / 10.275% boom after the ×1.05.
+    expect(booms).toBeCloseTo((0.10275 * (1 + reclimbBooms)) / 0.315, 6)
   })
 
   it('cheaper options cost less end to end', () => {
     const plain = expectedRun(160, 0, 17)
     const helped = expectedRun(160, 0, 17, {
-      starCatch: true,
       eventShining: true,
       mvp: 'diamond',
     })
@@ -222,8 +223,8 @@ describe('expectedRun', () => {
   })
 
   it('counts expected attempts', () => {
-    // 14★ → 15★ is a plain geometric: 1/0.3 attempts.
-    expect(expectedRun(200, 14, 15).attempts).toBeCloseTo(1 / 0.3, 10)
+    // 14★ → 15★ is a plain geometric: 1/0.315 attempts.
+    expect(expectedRun(200, 14, 15).attempts).toBeCloseTo(1 / 0.315, 10)
   })
 
   it('jumps two stars per success under the +1★ event', () => {
@@ -232,7 +233,7 @@ describe('expectedRun', () => {
     // 9★ jumps to 11★ (skipping 10★), then 11★ → 12★ normally.
     expect(run.perStar.map((r) => r.star)).toEqual([9, 11])
     expect(run.cost).toBeCloseTo(
-      attemptCost(200, 9) / 0.55 + attemptCost(200, 11) / 0.45,
+      attemptCost(200, 9) / 0.5775 + attemptCost(200, 11) / 0.4725,
       6,
     )
     // Without the event all three stars are attempted.
@@ -244,7 +245,7 @@ describe('expectedRun', () => {
   it('perStar rows sum to the run totals', () => {
     // The table column is recovery-inclusive by design, so the per-step
     // figures must add up to the headline numbers exactly.
-    const run = expectedRun(200, 17, 22, { starCatch: true })
+    const run = expectedRun(200, 17, 22, {})
     const sum = (key) => run.perStar.reduce((t, r) => t + r[key], 0)
     expect(sum('expectedCost')).toBeCloseTo(run.cost, 6)
     expect(sum('expectedBooms')).toBeCloseTo(run.booms, 6)
@@ -275,12 +276,12 @@ describe('simulateRuns', () => {
     expect(p90).toBeCloseTo(1000 * Math.log(10), 6)
     // The model matches the real simulation on a feasible range: the sim's
     // median/mean ratio sits near ln 2 and p90/mean near ln 10.
-    const mean = expectedRun(200, 17, 22, { starCatch: true }).cost
+    const mean = expectedRun(200, 17, 22, {}).cost
     const sim = simulateRuns(
       200,
       17,
       22,
-      { starCatch: true },
+      {},
       { runs: 4000, rng: mulberry32(7) },
     )
     expect(sim.median / mean).toBeGreaterThan(0.6)
@@ -292,14 +293,12 @@ describe('simulateRuns', () => {
   it('refuses ranges too long to simulate honestly', () => {
     // 0→30 averages ~15M attempts per run; a clipped simulation would report
     // a false median ≈ p90, so the gate returns null instead.
-    expect(
-      expectedRun(200, 0, 30, { starCatch: true }).attempts,
-    ).toBeGreaterThan(SIM_MAX_EXPECTED_ATTEMPTS)
-    expect(simulateRuns(200, 0, 30, { starCatch: true })).toBeNull()
+    expect(expectedRun(200, 0, 30, {}).attempts).toBeGreaterThan(
+      SIM_MAX_EXPECTED_ATTEMPTS,
+    )
+    expect(simulateRuns(200, 0, 30, {})).toBeNull()
     // Everyday ranges stay well inside the gate.
-    expect(
-      simulateRuns(200, 17, 22, { starCatch: true }, { runs: 200 }),
-    ).not.toBeNull()
+    expect(simulateRuns(200, 17, 22, {}, { runs: 200 })).not.toBeNull()
   })
 })
 

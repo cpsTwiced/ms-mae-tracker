@@ -3,13 +3,13 @@ import { optimizeModes, reachChances } from './optimizer'
 import { MAX_SPARES } from '@/data/starforce'
 import { attemptOdds, expectedRun } from './starforce'
 
-const SC = { starCatch: true }
+const OPTS = {}
 const ALL = (level) =>
   Object.fromEntries([15, 16, 17, 18, 19, 20, 21].map((s) => [s, level]))
 
 describe('optimizeModes', () => {
   it('finds the cheapest plan meeting the chance (mockup spot-check)', () => {
-    const row = optimizeModes(200, 0, 22, SC, 0.9).rows[2]
+    const row = optimizeModes(200, 0, 22, OPTS, 0.9).rows[2]
     expect(row.modes).toEqual({
       15: 4,
       16: 3,
@@ -24,18 +24,18 @@ describe('optimizeModes', () => {
   })
 
   it('prices plans exactly like expectedRun', () => {
-    const r = optimizeModes(200, 0, 22, SC, 0.9)
+    const r = optimizeModes(200, 0, 22, OPTS, 0.9)
     for (const row of [r.rows[0], r.rows[2], r.rows[5]]) {
-      const run = expectedRun(200, 0, 22, { ...SC, modes: row.modes })
+      const run = expectedRun(200, 0, 22, { ...OPTS, modes: row.modes })
       expect(row.cost).toBeCloseTo(run.cost, 0)
     }
   })
 
   it('finds all Level 1 cheapest overall', () => {
-    const { cheapest } = optimizeModes(200, 0, 22, SC, 0.9)
+    const { cheapest } = optimizeModes(200, 0, 22, OPTS, 0.9)
     expect(cheapest.modes).toEqual(ALL(1))
     expect(cheapest.cost).toBeCloseTo(
-      expectedRun(200, 0, 22, { ...SC, mode: 1 }).cost,
+      expectedRun(200, 0, 22, { ...OPTS, mode: 1 }).cost,
       0,
     )
     expect(cheapest.chanceBySpares).toHaveLength(MAX_SPARES + 1)
@@ -53,32 +53,32 @@ describe('optimizeModes', () => {
   })
 
   it('reaches 22★ for sure with Level 4 everywhere and no spares', () => {
-    const row = optimizeModes(200, 0, 22, SC, 0.99).rows[0]
+    const row = optimizeModes(200, 0, 22, OPTS, 0.99).rows[0]
     expect(row.modes).toEqual(ALL(4))
     expect(row.chance).toBe(1)
   })
 
   it('has no mode stars when the target is 15★ or below', () => {
-    expect(optimizeModes(200, 0, 15, SC, 0.9).stars).toEqual([])
+    expect(optimizeModes(200, 0, 15, OPTS, 0.9).stars).toEqual([])
     // Lv.120 caps at 15★, so a 22★ target clamps to it.
-    const capped = optimizeModes(120, 0, 22, SC, 0.9)
+    const capped = optimizeModes(120, 0, 22, OPTS, 0.9)
     expect(capped.target).toBe(15)
     expect(capped.stars).toEqual([])
   })
 
   it('returns null when there is nothing to climb', () => {
-    expect(optimizeModes(200, 22, 22, SC, 0.9)).toBeNull()
-    expect(optimizeModes(120, 15, 22, SC, 0.9)).toBeNull()
+    expect(optimizeModes(200, 22, 22, OPTS, 0.9)).toBeNull()
+    expect(optimizeModes(120, 15, 22, OPTS, 0.9)).toBeNull()
   })
 
   it('still plans 15–21★ for climbs that start above them', () => {
-    expect(optimizeModes(200, 22, 24, SC, 0.5).stars).toEqual([
+    expect(optimizeModes(200, 22, 24, OPTS, 0.5).stars).toEqual([
       15, 16, 17, 18, 19, 20, 21,
     ])
   })
 
   it('marks rows no plan can reach and keeps the best plan', () => {
-    const { rows } = optimizeModes(200, 0, 25, SC, 0.9)
+    const { rows } = optimizeModes(200, 0, 25, OPTS, 0.9)
     expect(rows.slice(0, 11).every((row) => row.unreachable)).toBe(true)
     expect(rows[10].best.modes).toEqual(ALL(4))
     expect(rows[10].best.chance).toBeCloseTo(0.528, 2)
@@ -87,7 +87,7 @@ describe('optimizeModes', () => {
   })
 
   it('stops searching once the cheapest plan meets the chance', () => {
-    const r = optimizeModes(200, 0, 22, SC, 0.5)
+    const r = optimizeModes(200, 0, 22, OPTS, 0.5)
     const k = r.enough
     expect(r.cheapest.chanceBySpares[k]).toBeGreaterThanOrEqual(0.5)
     expect(r.cheapest.chanceBySpares[k - 1]).toBeLessThan(0.5)
@@ -98,16 +98,16 @@ describe('optimizeModes', () => {
     }
     expect(r.rows).toHaveLength(MAX_SPARES + 1)
     // A target the cheapest plan never reaches often enough searches all.
-    expect(optimizeModes(200, 0, 25, SC, 0.9).enough).toBeNull()
+    expect(optimizeModes(200, 0, 25, OPTS, 0.9).enough).toBeNull()
   })
 
   it('ignores Safeguard and the calculator-wide mode', () => {
-    const plain = optimizeModes(200, 0, 22, SC, 0.9)
+    const plain = optimizeModes(200, 0, 22, OPTS, 0.9)
     const leaky = optimizeModes(
       200,
       0,
       22,
-      { ...SC, safeguard: true, mode: 3 },
+      { ...OPTS, safeguard: true, mode: 3 },
       0.9,
     )
     expect(leaky).toEqual(plain)
@@ -116,9 +116,9 @@ describe('optimizeModes', () => {
 
 describe('reachChances', () => {
   it('matches the optimizer at the target and never rises with height', () => {
-    const r = optimizeModes(200, 0, 22, SC, 0.9)
+    const r = optimizeModes(200, 0, 22, OPTS, 0.9)
     const row = r.rows[2]
-    const reach = reachChances(0, 22, SC, row.modes, 2)
+    const reach = reachChances(0, 22, OPTS, row.modes, 2)
     expect(reach[22]).toBeCloseTo(row.chance, 12)
     // No booms below 15★, so every star up to 15 is certain.
     expect(reach[15]).toBe(1)

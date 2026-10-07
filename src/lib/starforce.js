@@ -4,7 +4,6 @@
 // star by star); no simulation needed.
 //
 // `opts` shape (all optional):
-//   starCatch  bool    Star Catch minigame on every attempt
 //   safeguard  bool    Safeguard on 15-17★ attempts (boom 0, +200% base cost)
 //   mode       1-4     Enhancement Mode for 15-21★ attempts (default 1)
 //   modes      object  per-star override of `mode`, keyed by star ({ 18: 3 })
@@ -44,7 +43,7 @@ function modeAt(star, opts) {
 
 // Per-attempt { success, maintain, boom } at `star` under the given options.
 export function attemptOdds(star, opts = {}) {
-  const { starCatch, safeguard, eventShining } = opts
+  const { safeguard, eventShining } = opts
   const mode = modeAt(star, opts)
   const modeRow = ENHANCEMENT_MODES[star]
   let success =
@@ -57,7 +56,7 @@ export function attemptOdds(star, opts = {}) {
     boom = 0
   }
   if (eventShining && star <= BOOM_EVENT_MAX_STAR) boom *= 0.7
-  if (starCatch && success < 1) {
+  if (success < 1) {
     const boosted = Math.min(success * STAR_CATCH_MULT, 1)
     // The extra success mass comes proportionally out of maintain and boom.
     boom *= (1 - boosted) / (1 - success)
