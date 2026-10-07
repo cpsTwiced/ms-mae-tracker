@@ -1,3 +1,9 @@
+# [1.6.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.5.0...v1.6.0) (2026-10-07)
+
+### Features
+
+- apply the permanent +5% success rate from GMS v.271 ([#24](https://github.com/cpsTwiced/ms-mae-tracker/issues/24)) ([#25](https://github.com/cpsTwiced/ms-mae-tracker/issues/25)) ([4b385db](https://github.com/cpsTwiced/ms-mae-tracker/commit/4b385db7e0d5fcdac7f3fdf71420df9df544cb9f))
+
 # [1.5.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.4.0...v1.5.0) (2026-10-07)
 
 ### Bug Fixes
