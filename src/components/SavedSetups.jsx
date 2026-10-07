@@ -90,7 +90,6 @@ function summary(inputs) {
   const tags = []
   if (inputs.mode > 1) tags.push(`Level ${inputs.mode} mode`)
   if (inputs.safeguard) tags.push('Safeguard')
-  if (!inputs.starCatch) tags.push('No Star Catch')
   if (MVP_TAGS[inputs.mvp]) tags.push(MVP_TAGS[inputs.mvp])
   if (inputs.eventShining) tags.push('Shining')
   if (inputs.eventPlusOne) tags.push('1+1')

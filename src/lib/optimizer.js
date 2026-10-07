@@ -24,7 +24,7 @@ const MODE_STARS = [15, 16, 17, 18, 19, 20, 21]
 // can't drop a plan that sits exactly on 90%.
 const EPS = 1e-9
 
-// `opts` carries what the Lab exposes (starCatch, mvp, eventShining,
+// `opts` carries what the Lab exposes (mvp, eventShining,
 // eventPlusOne). Safeguard is forced off: Level 4 at 15-17★ already is
 // Safeguard. `chance` is a fraction (0.9). Returns null when there's no climb
 // (from ≥ target once the target is clamped to the level's cap).

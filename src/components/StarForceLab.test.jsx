@@ -14,7 +14,6 @@ import { formatMeso, pct } from '@/lib/format'
 afterEach(cleanup)
 
 const OPTS = {
-  starCatch: true,
   mvp: 'none',
   eventShining: false,
   eventPlusOne: false,
