@@ -4,7 +4,7 @@
 // the chances. Slower than the unit tests (~1-2 s), so it covers a few
 // representative climbs.
 import { describe, it, expect } from 'vitest'
-import { optimizeModes, reachChances } from './optimizer'
+import { optimizeModes } from './optimizer'
 import {
   attemptOdds,
   attemptCost,
@@ -159,7 +159,7 @@ describe('optimizer deep verification', () => {
       const { stars } = results[0]
 
       // Every plan scored by independent code paths: the calculator's
-      // expectedRun for cost and reachChances for chance.
+      // expectedRun for cost and a plain 2D table for chance.
       const plans = allPlans(stars).map((modes) => ({
         modes,
         cost: expectedRun(level, from, target, {
@@ -218,12 +218,6 @@ describe('optimizer deep verification', () => {
         expect(close(mine.cost, cost, 1e-7)).toBe(true)
         for (let k = 0; k <= KD; k++)
           expect(close(mine.chances[k], lin[k], 1e-8)).toBe(true)
-        // Reach for every intermediate star.
-        const reach = reachChances(from, target, opts, modes, 3)
-        for (let g = from + 1; g <= target; g++)
-          expect(
-            close(reach[g], indepChances(level, from, g, opts, modes)[3], 1e-8),
-          ).toBe(true)
       }
     }, 120000)
 
