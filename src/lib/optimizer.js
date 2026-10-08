@@ -161,39 +161,6 @@ export function optimizeModes(level, fromStar, toStar, opts, chance) {
   }
 }
 
-// Chance of reaching each star from `from` up to `target` with at most
-// `spares` booms, for one fixed plan ({ 15: 4, … }). The same recurrence as
-// the search, run once per goal star: the climb is identical until it first
-// gets there. `target` must already be clamped (optimizeModes' `target`).
-export function reachChances(from, target, opts, modes, spares) {
-  const o = { ...opts, safeguard: false, modes }
-  const pick = []
-  const reset = []
-  const step = []
-  for (let s = 0; s < target; s++) {
-    const { success, boom } = attemptOdds(s, o)
-    pick[s] = { p: success, b: boom }
-    reset[s] = boomResetStar(s)
-    step[s] = successStep(s, opts)
-  }
-  const P = new Float64Array(target)
-  const prev = new Float64Array(target)
-  const out = {}
-  for (let goal = from + 1; goal <= target; goal++) {
-    out[goal] = chancesBySpares(
-      pick,
-      reset,
-      step,
-      from,
-      goal,
-      spares,
-      P,
-      prev,
-    ).at(-1)
-  }
-  return out
-}
-
 // P[s] = chance to reach `target` from s with at most k booms left, solved
 // one k at a time; `prev` holds k − 1 (a boom spends one). Returns the chance
 // from `from` for k = 0…maxK. P and prev are scratch buffers (≥ target long)

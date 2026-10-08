@@ -89,7 +89,7 @@ describe('App', () => {
     const starForce = within(header).getByRole('tab', { name: 'Star Force' })
     expect(starForce).toHaveAttribute('aria-selected', 'true')
     expect(
-      screen.getByRole('table', { name: 'Optimized plan' }),
+      screen.getByRole('list', { name: 'Optimized plan' }),
     ).toBeInTheDocument()
 
     // Star Force in the header keeps you in the Lab.
@@ -111,7 +111,7 @@ describe('App', () => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
     expect(
-      screen.getByRole('table', { name: 'Optimized plan' }),
+      screen.getByRole('list', { name: 'Optimized plan' }),
     ).toBeInTheDocument()
   })
 

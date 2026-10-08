@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { optimizeModes, reachChances } from './optimizer'
+import { optimizeModes } from './optimizer'
 import { MAX_SPARES } from '@/data/starforce'
 import { attemptOdds, expectedRun } from './starforce'
 
@@ -111,19 +111,5 @@ describe('optimizeModes', () => {
       0.9,
     )
     expect(leaky).toEqual(plain)
-  })
-})
-
-describe('reachChances', () => {
-  it('matches the optimizer at the target and never rises with height', () => {
-    const r = optimizeModes(200, 0, 22, OPTS, 0.9)
-    const row = r.rows[2]
-    const reach = reachChances(0, 22, OPTS, row.modes, 2)
-    expect(reach[22]).toBeCloseTo(row.chance, 12)
-    // No booms below 15★, so every star up to 15 is certain.
-    expect(reach[15]).toBe(1)
-    for (let s = 16; s <= 22; s++) {
-      expect(reach[s]).toBeLessThanOrEqual(reach[s - 1] + 1e-12)
-    }
   })
 })
