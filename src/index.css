@@ -959,8 +959,8 @@ html:has(.sfBar[data-visible]) {
   background:
     linear-gradient(var(--mantine-color-dark-6), var(--mantine-color-dark-6))
       center bottom / 100% 28px no-repeat local,
-    linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent)
-      center bottom / 100% 18px no-repeat scroll;
+    linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent) center bottom /
+      100% 18px no-repeat scroll;
 }
 
 /* Spare-count buttons read like the table's other first-column labels. */
