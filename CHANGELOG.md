@@ -1,3 +1,14 @@
+# [1.7.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.6.0...v1.7.0) (2026-10-08)
+
+### Bug Fixes
+
+- separate the Lab table's rows from its notes with a divider instead of a shadow ([#27](https://github.com/cpsTwiced/ms-mae-tracker/issues/27)) ([b768cc3](https://github.com/cpsTwiced/ms-mae-tracker/commit/b768cc3b068b3b915e5b0be31122312ad8b260d8))
+
+### Features
+
+- apply the permanent +5% success rate from GMS v.271 ([#24](https://github.com/cpsTwiced/ms-mae-tracker/issues/24)) ([3c7bfc9](https://github.com/cpsTwiced/ms-mae-tracker/commit/3c7bfc99d96ee8292f1cc6cee5e0ab37f63deb59))
+- show the Lab's optimized plan as tiles and other options as cards ([#26](https://github.com/cpsTwiced/ms-mae-tracker/issues/26)) ([ceada83](https://github.com/cpsTwiced/ms-mae-tracker/commit/ceada8333c144fd428d1052f39c2a57f58235209))
+
 # [1.6.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.5.0...v1.6.0) (2026-10-07)
 
 ### Features
