@@ -869,6 +869,7 @@ html:has(.sfBar[data-visible]) {
    and the shorter Lab inputs card keeps its own height beside them. */
 .sfLabResults .sfTableCard {
   flex: none;
+  min-height: 0;
 }
 
 @media (min-width: 62em) {
@@ -885,13 +886,6 @@ html:has(.sfBar[data-visible]) {
 /* The selected spare count in the options table. */
 .sfTable tbody tr[data-selected] {
   background: var(--mantine-color-sage-light);
-}
-
-.sfTable .sfLabMode {
-  text-align: left;
-  font-family: var(--mantine-font-family);
-  font-weight: 600;
-  color: var(--mantine-color-sage-3);
 }
 
 .sfTable .sfLabLevel {
@@ -913,20 +907,60 @@ html:has(.sfBar[data-visible]) {
 
 /* Safeguard (Level 4 at 15-17★) gets its own color so it stands apart from
    the mode levels. */
-.sfSafeguard,
-.sfTable .sfLabMode[data-safeguard] {
+.sfSafeguard {
   color: var(--mantine-color-blue-4);
 }
 
-/* "View ›" links under Other options. */
-.sfLabView {
-  font-size: var(--mantine-font-size-sm);
-  font-weight: 600;
+/* Other options: cards sized to their content, not stretched to half the
+   column. */
+.sfLabOthers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Optimized plan: one tile per run of stars that share a mode. */
+.sfLabPlan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.sfLabStep {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-dark-4);
+  background: var(--mantine-color-dark-7);
   color: var(--mantine-color-sage-3);
 }
 
-.sfLabView:hover {
-  text-decoration: underline;
+.sfLabStep[data-basic] {
+  color: var(--mantine-color-dark-1);
+}
+
+.sfLabStep[data-safeguard] {
+  color: var(--mantine-color-blue-4);
+}
+
+/* Past 21 ★ there are no modes: dimmed like the tables' empty cells. */
+.sfLabStep[data-none] {
+  color: var(--mantine-color-dark-3);
+}
+
+/* Every option keeps a fixed height and scrolls its rows, on every screen. */
+.sfLabOptions.sfTableScroll .scrollStatusViewport {
+  max-height: 360px;
+  /* Bottom shadow while more rows are below: the card-colored cover scrolls
+     with the rows (local) and hides the fixed shadow once you hit the end. */
+  background:
+    linear-gradient(var(--mantine-color-dark-6), var(--mantine-color-dark-6))
+      center bottom / 100% 28px no-repeat local,
+    linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent) center bottom /
+      100% 18px no-repeat scroll;
 }
 
 /* Spare-count buttons read like the table's other first-column labels. */

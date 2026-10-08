@@ -52,12 +52,14 @@ describe('StarForceLab', () => {
       screen.getAllByText(formatMeso(Math.round(row.cost))).length,
     ).toBeGreaterThan(0)
     expect(screen.getAllByText(pct(row.chance)).length).toBeGreaterThan(0)
-    const plan = screen.getByRole('table', { name: 'Optimized plan' })
-    expect(within(plan).getByText('15 → 16')).toBeInTheDocument()
-    expect(within(plan).getAllByText('Level 4').length).toBeGreaterThan(0)
-    // Level 4 at 15-17★ is Safeguard and is labeled as such.
-    const first = within(plan).getByText('15 → 16').closest('tr')
-    expect(within(first).getByText('Safeguard')).toBeInTheDocument()
+    // Stars sharing a mode merge into one step; Level 4 at 15-17★ is
+    // labeled Safeguard.
+    const plan = screen.getByRole('list', { name: 'Optimized plan' })
+    const steps = within(plan).getAllByRole('listitem')
+    expect(steps.map((el) => el.textContent)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^15.* ★.*Safeguard$/)]),
+    )
+    expect(steps.length).toBeLessThan(7)
     const grid = screen.getByRole('table', { name: 'Every option' })
     expect(
       within(grid).getAllByRole('img', { name: 'Safeguard' }).length,
@@ -128,25 +130,13 @@ describe('StarForceLab', () => {
     ).toBeGreaterThan(0)
     expect(screen.getByText('Fewest spares')).toBeInTheDocument()
     expect(screen.getByText('Other options for 50%')).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        new RegExp(`Bring ${cheapest.spares} spares → .* cheaper\\)`),
-      ),
-    ).toBeInTheDocument()
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: `View the ${cheapest.spares} spares plan`,
-      }),
-    )
+    const card = screen.getByRole('button', {
+      name: `View the ${cheapest.spares} spares plan`,
+    })
+    expect(within(card).getByText('Cheapest')).toBeInTheDocument()
+    expect(within(card).getByText(/cheaper$/)).toBeInTheDocument()
+    fireEvent.click(card)
     expect(onSet).toHaveBeenCalledWith('spares', String(cheapest.spares))
-  })
-
-  it('shows the chance to reach each star in the plan', () => {
-    renderLab()
-    const row = optimizeModes(200, 0, 22, OPTS, 0.9).rows[2]
-    const plan = screen.getByRole('table', { name: 'Optimized plan' })
-    const last = within(plan).getByText('21 → 22').closest('tr')
-    expect(within(last).getByText(pct(row.chance))).toBeInTheDocument()
   })
 
   it('shows the best chance when no plan can reach the target', () => {
@@ -160,9 +150,12 @@ describe('StarForceLab', () => {
     )
   })
 
-  it('says when no modes are needed', () => {
-    renderLab({ target: 18, targetText: '18' })
-    expect(screen.getByText(/No modes needed/)).toBeInTheDocument()
+  it('shows a dash for stars past 21 (no modes)', () => {
+    renderLab({ target: 24, targetText: '24' })
+    const steps = within(
+      screen.getByRole('list', { name: 'Optimized plan' }),
+    ).getAllByRole('listitem')
+    expect(steps.at(-1)).toHaveTextContent('22–23 ★ —')
   })
 
   it('explains targets that never reach the mode stars', () => {

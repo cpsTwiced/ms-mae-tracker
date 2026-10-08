@@ -343,7 +343,7 @@ describe('Lab view', () => {
     expect(screen.queryByText('Enhancement mode')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Simulation runs')).not.toBeInTheDocument()
     expect(
-      screen.getByRole('table', { name: 'Optimized plan' }),
+      screen.getByRole('list', { name: 'Optimized plan' }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Item level').value).toBe('160')
 

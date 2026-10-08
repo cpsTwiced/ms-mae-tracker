@@ -7,8 +7,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { attemptOdds, attemptCost } from '@/lib/starforce'
-import { optimizeModes, reachChances } from '@/lib/optimizer'
+import { optimizeModes } from '@/lib/optimizer'
 import { MAX_SPARES, SAFEGUARD_STARS } from '@/data/starforce'
 import { SF_CHANCES, SF_DEFAULTS } from '@/lib/storage'
 import { formatMeso, digits, clampRaw, pct } from '@/lib/format'
@@ -18,8 +17,6 @@ import { SELECT_CHEVRON } from './SavedSetups'
 const CHANCE_OPTIONS = SF_CHANCES.map((c) => ({ value: c, label: `${c}%` }))
 
 const sparesText = (n) => `${n} ${n === 1 ? 'spare' : 'spares'}`
-
-const sameModes = (a, b) => Object.keys(a).every((s) => a[s] === b[s])
 
 // Level 4 at 15-17★ is Safeguard (no booms, same 3× cost), so it's shown as
 // Safeguard rather than a mode level.
@@ -135,10 +132,17 @@ export default function StarForceLab({
     r.spares === spares || (isPlus(r) && spares > result.enough)
   // "Other options": whichever of those two you aren't looking at, each with
   // why you'd pick it over the plan shown.
-  const others = [fewest, cheapest]
-    .filter((r, i, all) => r && r.spares !== spares && all.indexOf(r) === i)
-    .map((r) => ({
+  const others = [
+    { r: fewest, label: 'Fewest spares' },
+    { r: cheapest, label: 'Cheapest' },
+  ]
+    .filter(
+      ({ r }, i, all) =>
+        r && r.spares !== spares && all.findIndex((o) => o.r === r) === i,
+    )
+    .map(({ r, label }) => ({
       r,
+      label,
       why: row.unreachable
         ? `reaches ${chanceRaw}%`
         : r.cost < shown.cost
@@ -147,15 +151,20 @@ export default function StarForceLab({
             ? 'no spares needed'
             : `${spares - r.spares} fewer ${spares - r.spares === 1 ? 'spare' : 'spares'}`,
     }))
-  // Plan rows run from the first mode star to the target; past 21 ★ there are
-  // no modes, but the reach chance still matters there.
-  const planStars = ready
-    ? Array.from({ length: goal - 15 }, (_, i) => 15 + i)
-    : []
-  const reach = useMemo(
-    () => (shown ? reachChances(cur, goal, opts, shown.modes, spares) : null),
-    [shown, cur, goal, opts, spares],
-  )
+  // The plan runs from the first mode star to the target, merging stars in a
+  // row that use the same mode; past 21 ★ there are no modes.
+  const steps = []
+  for (let s = 15; ready && s < goal; s++) {
+    const mode = shown.modes[s]
+    const label = isSafeguard(s, mode)
+      ? 'Safeguard'
+      : mode
+        ? `Level ${mode}`
+        : '—'
+    const last = steps.at(-1)
+    if (last?.label === label) last.to = s
+    else steps.push({ from: s, to: s, label })
+  }
 
   const notice = !result
     ? emptyMessage
@@ -164,14 +173,6 @@ export default function StarForceLab({
         ? `Enhancement Modes start at 15 ★. A Lv.${level} item caps at ${starCap} ★, so there's nothing to optimize.`
         : 'Modes only matter from 15 ★ up. Set a target above 15 ★.'
       : null
-
-  let compare = null
-  if (ready && !row.unreachable) {
-    const cheapChance = pct(result.cheapest.chanceBySpares[spares])
-    compare = sameModes(row.modes, result.cheapest.modes)
-      ? `No modes needed: the cheapest plan reaches ${goal} ★ ${cheapChance} of the time with ${sparesText(spares)}.`
-      : `The cheapest plan costs ${formatMeso(Math.round(result.cheapest.cost))}, but with ${sparesText(spares)} it reaches ${goal} ★ only ${cheapChance} of the time.`
-  }
 
   return (
     <div className="sfResults sfLabResults">
@@ -296,31 +297,31 @@ export default function StarForceLab({
                   </div>
                 )}
               </Group>
-              {compare && (
-                <Text size="sm" c="dark.1" mt={12}>
-                  {compare}
-                </Text>
-              )}
               {others.length > 0 && (
                 <div style={{ marginTop: 16 }}>
                   <Text size="sm" fw={600} mb={4}>
                     Other options for {chanceRaw}%
                   </Text>
-                  {others.map(({ r, why }) => (
-                    <Group key={r.spares} gap={12}>
-                      <Text size="sm" c="dark.1">
-                        Bring {sparesText(r.spares)} →{' '}
-                        {formatMeso(Math.round(r.cost))} ({why})
-                      </Text>
+                  <div className="sfLabOthers">
+                    {others.map(({ r, label, why }) => (
                       <UnstyledButton
-                        className="sfLabView"
+                        key={r.spares}
+                        className="sfModeCard"
                         aria-label={`View the ${sparesText(r.spares)} plan`}
                         onClick={() => onSet('spares', String(r.spares))}
                       >
-                        View ›
+                        <Text className="sfEyebrow" c="sage.3">
+                          {label}
+                        </Text>
+                        <Text size="sm" fw={700}>
+                          Bring {sparesText(r.spares)}
+                        </Text>
+                        <Text size="xs" opacity={0.72}>
+                          {formatMeso(Math.round(r.cost))} · {why}
+                        </Text>
                       </UnstyledButton>
-                    </Group>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </>
@@ -334,66 +335,25 @@ export default function StarForceLab({
             <Text size="md" fw={600} px={16} pt={14} pb={10}>
               Optimized plan
             </Text>
-            <ScrollStatusArea
-              className="sfTableScroll"
-              refreshKey={shown}
-              scrollbars="xy"
-            >
-              <table className="sfTable" aria-label="Optimized plan">
-                <thead>
-                  <tr>
-                    <th>Star</th>
-                    <th className="sfLabMode">Mode</th>
-                    <th>Success</th>
-                    <th>Boom</th>
-                    <th>Cost / attempt</th>
-                    <th>Reach</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {planStars.map((s) => {
-                    const mode = shown.modes[s]
-                    const o = { ...opts, mode: mode ?? 1 }
-                    const odds = attemptOdds(s, o)
-                    return (
-                      <tr key={s}>
-                        <td>
-                          {s} → {s + 1}
-                        </td>
-                        <td
-                          className="sfLabMode"
-                          data-basic={(mode ?? 1) === 1 || undefined}
-                          data-safeguard={isSafeguard(s, mode) || undefined}
-                        >
-                          {isSafeguard(s, mode)
-                            ? 'Safeguard'
-                            : mode
-                              ? `Level ${mode}`
-                              : '—'}
-                        </td>
-                        <td>{pct(odds.success)}</td>
-                        <td
-                          style={{
-                            color:
-                              odds.boom > 0
-                                ? 'var(--mantine-color-orange-3)'
-                                : 'var(--mantine-color-dark-3)',
-                          }}
-                        >
-                          {odds.boom > 0 ? pct(odds.boom) : '—'}
-                        </td>
-                        <td>{formatMeso(attemptCost(level, s, o))}</td>
-                        <td>{pct(reach[s + 1] ?? 1)}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </ScrollStatusArea>
-            <Text size="xs" c="dark.2" px={16} py={12}>
-              Reach is the chance to get to that row&apos;s next star with{' '}
-              {sparesText(spares)}, using this plan.
-            </Text>
+            <div className="sfLabPlan" role="list" aria-label="Optimized plan">
+              {steps.map(({ from, to, label }) => (
+                <div
+                  key={from}
+                  className="sfLabStep"
+                  role="listitem"
+                  data-safeguard={label === 'Safeguard' || undefined}
+                  data-basic={label === 'Level 1' || undefined}
+                  data-none={label === '—' || undefined}
+                >
+                  <Text size="xs" c="dark.0" fw={600}>
+                    {from === to ? from : `${from}–${to}`} ★
+                  </Text>
+                  <Text size="sm" fw={700}>
+                    {label === 'Safeguard' && SHIELD_ICON} {label}
+                  </Text>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="sfTableCard">
@@ -413,7 +373,7 @@ export default function StarForceLab({
               </Text>
             </Group>
             <ScrollStatusArea
-              className="sfTableScroll"
+              className="sfTableScroll sfLabOptions"
               refreshKey={result}
               scrollbars="xy"
             >
@@ -489,18 +449,16 @@ export default function StarForceLab({
                 </tbody>
               </table>
             </ScrollStatusArea>
-            <Text size="xs" c="dark.2" px={16} py={12}>
-              <span className="sfSafeguard">{SHIELD_ICON}</span> = Safeguard
-              (15–17 ★: no booms, +200% cost; the game also offers it as
-              Enhancement Mode Level 4). Chance is how often you reach {goal} ★
-              before running out of spares. Exp. cost is the average spend if
-              you keep going until {goal} ★. Modes only exist for 15–21 ★, so
-              higher stars always risk a boom. Some plans look uneven on
-              purpose: the optimizer takes boom risk where it&apos;s cheapest.
-              Past 10 spares, only counts that save at least 1% are listed
+            <Text size="xs" c="dark.2" px={16} pt={12}>
+              <span className="sfSafeguard">{SHIELD_ICON}</span> Safeguard: no
+              booms at 15–17 ★, +200% cost.
+            </Text>
+            <Text size="xs" c="dark.2" px={16} pt={4} pb={12}>
+              Chance = reaching {goal} ★ before spares run out. Past 10 spares,
+              only counts that save 1%+ are listed
               {result.enough !== null &&
-                `; ${result.enough}+ means more spares won't make it any cheaper`}
-              . You can type up to {MAX_SPARES} spares.
+                `; ${result.enough}+ is as cheap as it gets`}
+              .
             </Text>
           </div>
         </>
