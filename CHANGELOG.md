@@ -1,3 +1,59 @@
+# [1.6.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.5.0...v1.6.0) (2026-10-07)
+
+### Features
+
+- apply the permanent +5% success rate from GMS v.271 ([#24](https://github.com/cpsTwiced/ms-mae-tracker/issues/24)) ([#25](https://github.com/cpsTwiced/ms-mae-tracker/issues/25)) ([4b385db](https://github.com/cpsTwiced/ms-mae-tracker/commit/4b385db7e0d5fcdac7f3fdf71420df9df544cb9f))
+
+# [1.5.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.4.0...v1.5.0) (2026-10-07)
+
+### Bug Fixes
+
+- address code review findings on the phone results bar ([b02f5eb](https://github.com/cpsTwiced/ms-mae-tracker/commit/b02f5eb91c825609c43f47fba267466468e5848a))
+
+### Features
+
+- add phone results bar to the Star Force calculator ([f9200e7](https://github.com/cpsTwiced/ms-mae-tracker/commit/f9200e72fe2983cdfbb52877981e8b743c832dae))
+- add phone results bar to the Star Force calculator ([f1dc503](https://github.com/cpsTwiced/ms-mae-tracker/commit/f1dc50357f3c2a53e30d494093a9c51e472ee3e1))
+- add the Star Force Lab (Enhancement Mode optimizer) ([#23](https://github.com/cpsTwiced/ms-mae-tracker/issues/23)) ([c8cabc1](https://github.com/cpsTwiced/ms-mae-tracker/commit/c8cabc17110d5039ad15d45c475e3945aa2779bc))
+- make Star Force the home page with shareable URLs ([8eee40e](https://github.com/cpsTwiced/ms-mae-tracker/commit/8eee40e66f329a26cc532e54e4a893c76b7e75e5))
+- make Star Force the home page with shareable URLs ([2e70b15](https://github.com/cpsTwiced/ms-mae-tracker/commit/2e70b156b57fb857005656f9a3259fe351ef5030))
+- share a Star Force setup as a link ([452146e](https://github.com/cpsTwiced/ms-mae-tracker/commit/452146ea554c68382284cec8f066e8e4fa529104))
+- share a Star Force setup as a link ([764f963](https://github.com/cpsTwiced/ms-mae-tracker/commit/764f96317b13a8e29dad95a79de592348c248acb)), closes [#anchors](https://github.com/cpsTwiced/ms-mae-tracker/issues/anchors)
+
+# [1.4.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.3.0...v1.4.0) (2026-10-02)
+
+### Bug Fixes
+
+- address code review findings on saved setups ([f53b81f](https://github.com/cpsTwiced/ms-mae-tracker/commit/f53b81f2340316458b19d5024fee125ebead1d6a))
+
+### Features
+
+- add saved setups to the Star Force calculator ([ba11629](https://github.com/cpsTwiced/ms-mae-tracker/commit/ba11629f5d0d35f18cbdc8017b3f59908347d23a))
+
+# [1.3.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.2.0...v1.3.0) (2026-08-07)
+
+### Features
+
+- add Jupiter (v.270) to boss catalog and Ursus Golden Time timer ([a67c7bd](https://github.com/cpsTwiced/ms-mae-tracker/commit/a67c7bdeabca6a52d92a936a1b1e99f0c45b720b))
+- add Jupiter portrait from the community MapleStory Wiki ([861f6a8](https://github.com/cpsTwiced/ms-mae-tracker/commit/861f6a81a2ad5303c70d1605615b403994164065))
+- clarify Ursus timer states with labeled countdown and gold accent ([1fffef0](https://github.com/cpsTwiced/ms-mae-tracker/commit/1fffef03459fa6718bd23eefe331af84e1c405ee))
+
+# [1.2.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.1.0...v1.2.0) (2026-08-06)
+
+### Bug Fixes
+
+- bug-backlog sweep — delete-dialog hardening, input clamps, analytic estimates ([b90ea55](https://github.com/cpsTwiced/ms-mae-tracker/commit/b90ea55a5be254b517f01c5c3307c39ae2dd12fd))
+- high-star sim honesty, real input caps, and roster interaction bugs ([1a4232e](https://github.com/cpsTwiced/ms-mae-tracker/commit/1a4232ec5d12e9c10521bc64609257c628545754)), closes [hi#star](https://github.com/hi/issues/star)
+- ignore design-sync inputs in prettier so CI format check passes ([7dc297a](https://github.com/cpsTwiced/ms-mae-tracker/commit/7dc297ac57956965767ebed9618adc4b221d6f2f))
+- stop iOS focus-zoom on the calculator dropdowns ([5c3b17b](https://github.com/cpsTwiced/ms-mae-tracker/commit/5c3b17b2eab1da1f69bcdb488ec804cd53749caf))
+- widen Shining boom reduction to 21★ attempts and adopt measured 20★ mode rates ([6837451](https://github.com/cpsTwiced/ms-mae-tracker/commit/6837451298c0127ad39c0fa4ebb8b98661f022b6))
+
+### Features
+
+- add Star Force calculator UI with design-aligned header and events ([7466495](https://github.com/cpsTwiced/ms-mae-tracker/commit/7466495894b6ea5e75ea32ac8f88f6eb2f1a7ab3))
+- add Star Force expected-cost engine with GMS v.269 data ([3b0b802](https://github.com/cpsTwiced/ms-mae-tracker/commit/3b0b802f8a76b683ddeaedf8b12b1240b5ee8c95))
+- align Star Force UI with design feedback and make the table responsive ([8c6cb85](https://github.com/cpsTwiced/ms-mae-tracker/commit/8c6cb85be0027c407731a90e4d9b8d1630dc78de))
+
 # [1.1.0](https://github.com/cpsTwiced/ms-mae-tracker/compare/v1.0.0...v1.1.0) (2026-07-10)
 
 ### Bug Fixes
