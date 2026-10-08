@@ -302,7 +302,7 @@ export default function StarForceLab({
                   <Text size="sm" fw={600} mb={4}>
                     Other options for {chanceRaw}%
                   </Text>
-                  <div className="sfModeGrid">
+                  <div className="sfLabOthers">
                     {others.map(({ r, label, why }) => (
                       <UnstyledButton
                         key={r.spares}

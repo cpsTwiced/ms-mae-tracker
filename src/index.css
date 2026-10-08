@@ -911,6 +911,14 @@ html:has(.sfBar[data-visible]) {
   color: var(--mantine-color-blue-4);
 }
 
+/* Other options: cards sized to their content, not stretched to half the
+   column. */
+.sfLabOthers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Optimized plan: one tile per run of stars that share a mode. */
 .sfLabPlan {
   display: flex;
