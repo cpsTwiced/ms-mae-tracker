@@ -954,6 +954,13 @@ html:has(.sfBar[data-visible]) {
 /* Every option keeps a fixed height and scrolls its rows, on every screen. */
 .sfLabOptions.sfTableScroll .scrollStatusViewport {
   max-height: 360px;
+  /* Bottom shadow while more rows are below: the card-colored cover scrolls
+     with the rows (local) and hides the fixed shadow once you hit the end. */
+  background:
+    linear-gradient(var(--mantine-color-dark-6), var(--mantine-color-dark-6))
+      center bottom / 100% 28px no-repeat local,
+    linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent)
+      center bottom / 100% 18px no-repeat scroll;
 }
 
 /* Spare-count buttons read like the table's other first-column labels. */
